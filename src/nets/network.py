@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 class Network(object):
     def __init__(self, scope):
         self._is_called = False
@@ -11,7 +13,8 @@ class Network(object):
         if self._is_called:
             return self.output
         self.input = X
-        self.output = self._build_network(*args, **kwargs)
+        with tf.variable_scope(self._scope):
+            self.output = self._build_network(*args, **kwargs)
         self._is_called = True
         return self.output
 

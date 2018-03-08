@@ -45,30 +45,32 @@ def main():
     X = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
     gt = tf.placeholder(tf.int32, shape=[None])    
     y = model(X)
-    print(y.shape, gt.shape)
+    for var in tf.global_variables():
+        print(var.name, var.shape)
     loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt, logits=y)
 
     sess = tf.Session()
+    evaluate_mean(sess)
     sess.run(tf.global_variables_initializer())
-    pretrained_file = abspath(join(dirname(__file__), '../../models/resnet/ResNet-L50.ckpt'))
-    #tf.train.Saver().restore(sess, pretrained_file)
-    #evaluate_mean(sess)
+    pretrained_file = abspath(join(dirname(__file__), '../../models/resnet/tensorflow/resnet50.py'))
+    model.load(sess, pretrained_file)
+    evaluate_mean(sess)
 
-    gts = read_gt()
-    images = read_imgs()
-    num_correct = 0
-    num_images = 0
-    for i in range(len(images)):
-        image = load_img(images[i])
-        score, ls = sess.run([y, loss], feed_dict={X:image, gt:np.array([gts[i]])})
-        print(score.shape)
-        print(gts[i])
-        print(ls, score[0, gts[i]-5:gts[i]+5], score.shape)
-        pred = np.squeeze(score).argmax()
-        if pred == gts[i]:
-            num_correct += 1
-        num_images += 1
-        print('accuracy: %d/%d, loss: %f, pred: %d, groundtruth: %d'%(num_correct, num_images, ls[0], pred, gts[i]))
+    #gts = read_gt()
+    #images = read_imgs()
+    #num_correct = 0
+    #num_images = 0
+    #for i in range(len(images)):
+    #    image = load_img(images[i])
+    #    score, ls = sess.run([y, loss], feed_dict={X:image, gt:np.array([gts[i]])})
+    #    print(score.shape)
+    #    print(gts[i])
+    #    print(ls, score[0, gts[i]-5:gts[i]+5], score.shape)
+    #    pred = np.squeeze(score).argmax()
+    #    if pred == gts[i]:
+    #        num_correct += 1
+    #    num_images += 1
+    #    print('accuracy: %d/%d, loss: %f, pred: %d, groundtruth: %d'%(num_correct, num_images, ls[0], pred, gts[i]))
 
 if __name__ == '__main__':
     main()
