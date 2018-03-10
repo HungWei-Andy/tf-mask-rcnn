@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from tensorflow.contrib.slim.nets import resnet_v1
-from nms import nms
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
@@ -36,7 +35,7 @@ def rpn_logits(feats, ratios):
     out_anchors = []
     out_loc = []
     out_cls = []
-    N_batch_tensor = tf.shape(feats)[0]
+    N_batch_tensor = tf.shape(feats[0])[0]
     for i, feat in enumerate(feats):
         ratio = ratios[i]
         
@@ -45,7 +44,7 @@ def rpn_logits(feats, ratios):
         num_anchors = anchors.get_shape().as_list()[-2]
         
         # predict cls, coordinate
-        conv_feat = slim.conv2d(feats, 512, 3)
+        conv_feat = slim.conv2d(feat, 512, 3)
         loc = slim.conv2d(conv_feat, num_anchors*4, 1,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001),
                     activation_fn=tf.nn.sigmoid)
@@ -55,8 +54,8 @@ def rpn_logits(feats, ratios):
 
         # reshape into size(N, -1)
         out_anchors.append(tf.reshape(anchors, (-1, 4))) # shape: [H*W*N_anchor, 4]
-        out_loc.append(tf.reshape(loc, (N_batch_tensor, -1, 4)) # shape: [N, H*W*num_anchor, 4]
-        out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2)) # shape: [N, H*W*num_anchor, 2]
+        out_loc.append(tf.reshape(loc, (N_batch_tensor, -1, 4))) # shape: [N, H*W*num_anchor, 4]
+        out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2))) # shape: [N, H*W*num_anchor, 2]
     return out_anchors, out_loc, out_cls
 
 def decode_roi(anchors, loc, cls):
@@ -97,35 +96,37 @@ def decode_rois(anchors, locs, clses):
     list_probs, list_boxes = [], []
     for i in range(len(anchors)):
         anchor, loc, cls = anchors[i], locs[i], clses[i]
-        boxes, probs = tf.py_func(decode_roi, [anchor, loc, cls], [tf.float32, tf.float32, tf.float32])
+        boxes, probs = tf.py_func(decode_roi, [anchor, loc, cls], [tf.float32, tf.float32])
         list_probs.append(probs)
         list_boxes.append(boxes)
 
     rois = {}
-    roi['prob'] = tf.concat(list_probs, axis=1)
-    roi['box'] = tf.concat(list_boxes, axis=1)
-    return roi
+    rois['prob'] = tf.concat(list_probs, axis=1)
+    rois['box'] = tf.concat(list_boxes, axis=1)
+    return rois
 
 def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
+    # filter with scores
+    _, order = tf.nn.top_k(probs, pre_nms_topn)
+    boxes = tf.gather(boxes, order)
+    probs = tf.gather(probs, order)
+    return boxes, probs
+
     # filter too small boxes
+    normalized_box = boxes / cfg.image_size
     widths = normalized_box[:,2] - normalized_box[:,0] 
     heights = normalized_box[:,3] - normalized_box[:,1]
-    keep = np.where((widths >= cfg.min_size) & (heights >= cfg.min_size))
-    boxes = boxes[keep, :]
-    probs = probs[keep]
+    keep = tf.logical_and(widths >= cfg.min_size, heights >= cfg.min_size)
+    boxes = tf.boolean_mask(boxes, keep)
+    probs = tf.boolean_mask(probs, keep)
 
-    # filter with scores
-    order = probs.ravel().argsort()[::-1]
-    if pre_nms_top_n > 0:
-        order = order[:pre_nms_top_n]
-    boxes = boxes[order, :]
-    probs = probs[order]
     return boxes, probs
 
 def refine_rois(rois, training):
     min_size = cfg.min_size
     nms_thresh = cfg.rpn_nms_thresh
-    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_test
+    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
+    batch_size = cfg.batch_size if training else 1
     pre_nms_topn = 12000
     post_nms_topn = 2000
     if not training:
@@ -133,47 +134,62 @@ def refine_rois(rois, training):
         post_nms_topn = 400
 
     boxes, probs = rois['box'], rois['prob']
-    boxes = boxes * np.array(cfg.rpn_bbox_stddev).reshape(1, 1, 4)
+    boxes = boxes * cfg.rpn_bbox_stddev.reshape(1, 1, 4)
     
     N = boxes.shape[0]
     roi_batch = []
-    for i in range(N):
-        box, prob = tf.gather_nd(boxes, tf.constant(i)), tf.gather_nd(boxes, tf.constant(i))
+    for i in range(batch_size):
+        box, prob = boxes[i], probs[i]
         box, prob = tf.reshape(box, [-1, 4]), tf.reshape(prob, [-1])
-        nonms_box, nonms_probs = tf.py_func(refine_roi, [box, prob, pre_nms_topn, post_nms_topn], [tf.float32, tf.float32])
-        normalized_box = nonms_box / cfg.image_size
-        indices = tf.images.non_max_suppression(nonmalized_box, nonms_probs, proposal_count, nms_thresh)
-        proposals = tf.gather(nonms_box, indices)
-        roi_batch.append(proposals)
-    return roi_batch
+        nonms_box, nonms_probs = refine_roi(box, prob, pre_nms_topn, post_nms_topn)
 
-def roi_crop(feats, rois):
-    boxes = rois['box'] # shape: None, num_boxes, 4
-    probs = rois['prob'] # shape: None, 
+        normalized_box = nonms_box / cfg.image_size
+        indices = tf.image.non_max_suppression(normalized_box, nonms_probs, proposal_count, nms_thresh)
+        proposals = tf.gather(nonms_box, indices)
+        padding = proposal_count-tf.shape(proposals)[0]
+        proposals = tf.reshape(tf.pad(proposals, [[0, padding], [0,0]]), [proposal_count, 4])
+        roi_batch.append(proposals)
+    final_proposal = tf.stack(roi_batch, axis=0)
+    return final_proposal
+
+def crop_proposals(feats, boxes, training):
+    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
+    x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]
     w = x2 - x1
     h = y2 - y1
-    
+
     # adaptive features in fpn
     ks = tf.log(tf.sqrt(w*h)/cfg.image_size) / tf.log(tf.constant(2.0))
-    ks = 4 + tf.cast(tf.round(k), tf.int32)
-    ks = tf.minimum(5, tf.maximum(2, level))
-    
+    ks = 4 + tf.cast(tf.round(ks), tf.int32)
+    ks = tf.minimum(5, tf.maximum(2, ks))
+
     # crop and resize
-    out = []
+    outputs = []
     original_ind = []
     for i, curk in enumerate(range(2, 6)):
-        filtered_idx = tf.where(tf.equal(ks, curk))
-        original_ind.append(filtered_idx)
+        filtered_ind = tf.where(tf.equal(ks, curk))
+        cur_boxes = tf.gather_nd(boxes, filtered_ind)
+        batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
+        original_ind.append(batch_ind)
 
-        cur_boxes = tf.gather_nd(boxes, filtered_idx)
-        batch_idx = tf.cast(filtered_idx[:, 0], tf.int32)
         cur_boxes = tf.stop_gradient(cur_boxes)
-        batch_idx = tf.stop_gradient(batch_ind)
-        out.append(tf.image.crop_and_resize(feats[i], cur_boxes, batch_idx, cfg.crop_size))
+        batch_ind = tf.stop_gradient(batch_ind)
+       
+        out = tf.image.crop_and_resize(feats[i], cur_boxes, batch_ind, [cfg.crop_size, cfg.crop_size])
+        outputs.append(out)
 
     # encapsulate
     out = tf.concat(out, axis=0)
     original_ind = tf.concat(original_ind, axis=0)
+    print(out.shape, original_ind.shape)
 
-    # rearrange
+    # re-arrange
+    num_total_box = tf.shape(original_ind)[0]
+    ind_total_box = tf.range(num_total_box)
+    sort_ind = original_ind * num_total_box + ind_total_box
+    ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
+    output = tf.gather(out, ind)
+    output = tf.reshape(output, [-1, proposal_count, cfg.crop_size, cfg.crop_size, 256])
+    
+    return output
