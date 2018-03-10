@@ -27,13 +27,14 @@ def resnet50(X, training):
     return output_layers, shrink_ratios
 
 def fpn(layers, ratios):
+    crop_channel = cfg.crop_channel
     num_layers = len(layers)
     outputs = []
 
     # pyramid
-    outputs.append(slim.conv2d(layers[-1], 256, 1)) 
+    outputs.append(slim.conv2d(layers[-1], crop_channel, 1)) 
     for curi in range(num_layers-2, -1, -1):
-        cur_feat = slim.conv2d(layers[curi], 256, 1)
+        cur_feat = slim.conv2d(layers[curi], crop_channel, 1)
         ups_feat = tf.image.resize_images(outputs[0], cur_feat.get_shape()[1:3])
         outputs = [cur_feat+ups_feat] + outputs
 

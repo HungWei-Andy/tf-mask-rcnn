@@ -70,7 +70,7 @@ def decode_roi(anchors, loc, cls):
                decoded [xmin, ymin, xmax, ymax] for each box
       - probs: probability of object, a tensor of shape [N, H*W*N_anchor]
     '''
-    imsize = cfg.image_size
+    image_size = cfg.image_size
     anchors = anchors[np.newaxis, :, :]
     anc_widths = anchors[:,:,2] - anchors[:,:, 0] + 1
     anc_heights = anchors[:,:,3] - anchors[:,:,1] + 1
@@ -87,7 +87,7 @@ def decode_roi(anchors, loc, cls):
     boxes[:,:,1] = box_ctry - 0.5 * box_h
     boxes[:,:,2] = box_ctrx + 0.5 * box_w - 1
     boxes[:,:,3] = box_ctry + 0.5 * box_h - 1
-    boxes = np.maximum(0.0, np.minimum(imsize, boxes))
+    boxes = np.maximum(0.0, np.minimum(image_size, boxes))
     
     probs = cls[:,:,1]
     return boxes, probs
@@ -106,6 +106,9 @@ def decode_rois(anchors, locs, clses):
     return rois
 
 def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
+    image_size = cfg.image_size
+    min_size = cfg.min_size
+
     # filter with scores
     _, order = tf.nn.top_k(probs, pre_nms_topn)
     boxes = tf.gather(boxes, order)
@@ -113,20 +116,23 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
     return boxes, probs
 
     # filter too small boxes
-    normalized_box = boxes / cfg.image_size
+    normalized_box = boxes / image_size
     widths = normalized_box[:,2] - normalized_box[:,0] 
     heights = normalized_box[:,3] - normalized_box[:,1]
-    keep = tf.logical_and(widths >= cfg.min_size, heights >= cfg.min_size)
+    keep = tf.logical_and(widths >= min_size, heights >= min_size)
     boxes = tf.boolean_mask(boxes, keep)
     probs = tf.boolean_mask(probs, keep)
 
     return boxes, probs
 
 def refine_rois(rois, training):
+    image_size = cfg.image_size
     min_size = cfg.min_size
     nms_thresh = cfg.rpn_nms_thresh
     proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
     batch_size = cfg.batch_size if training else 1
+    box_stddev = cfg.rpn_bbox_stddev
+
     pre_nms_topn = 12000
     post_nms_topn = 2000
     if not training:
@@ -134,7 +140,7 @@ def refine_rois(rois, training):
         post_nms_topn = 400
 
     boxes, probs = rois['box'], rois['prob']
-    boxes = boxes * cfg.rpn_bbox_stddev.reshape(1, 1, 4)
+    boxes = boxes * box_stddev.reshape(1, 1, 4)
     
     N = boxes.shape[0]
     roi_batch = []
@@ -143,7 +149,7 @@ def refine_rois(rois, training):
         box, prob = tf.reshape(box, [-1, 4]), tf.reshape(prob, [-1])
         nonms_box, nonms_probs = refine_roi(box, prob, pre_nms_topn, post_nms_topn)
 
-        normalized_box = nonms_box / cfg.image_size
+        normalized_box = nonms_box / image_size
         indices = tf.image.non_max_suppression(normalized_box, nonms_probs, proposal_count, nms_thresh)
         proposals = tf.gather(nonms_box, indices)
         padding = proposal_count-tf.shape(proposals)[0]
@@ -153,6 +159,9 @@ def refine_rois(rois, training):
     return final_proposal
 
 def crop_proposals(feats, boxes, training):
+    crop_channel = cfg.crop_channel
+    crop_size = cfg.crop_size
+    image_size = cfg.image_size
     proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
     x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]
@@ -160,7 +169,7 @@ def crop_proposals(feats, boxes, training):
     h = y2 - y1
 
     # adaptive features in fpn
-    ks = tf.log(tf.sqrt(w*h)/cfg.image_size) / tf.log(tf.constant(2.0))
+    ks = tf.log(tf.sqrt(w*h)/image_size) / tf.log(tf.constant(2.0))
     ks = 4 + tf.cast(tf.round(ks), tf.int32)
     ks = tf.minimum(5, tf.maximum(2, ks))
 
@@ -176,7 +185,7 @@ def crop_proposals(feats, boxes, training):
         cur_boxes = tf.stop_gradient(cur_boxes)
         batch_ind = tf.stop_gradient(batch_ind)
        
-        out = tf.image.crop_and_resize(feats[i], cur_boxes, batch_ind, [cfg.crop_size, cfg.crop_size])
+        out = tf.image.crop_and_resize(feats[i], cur_boxes, batch_ind, [crop_size, crop_size])
         outputs.append(out)
 
     # encapsulate
@@ -190,6 +199,6 @@ def crop_proposals(feats, boxes, training):
     sort_ind = original_ind * num_total_box + ind_total_box
     ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
     output = tf.gather(out, ind)
-    output = tf.reshape(output, [-1, proposal_count, cfg.crop_size, cfg.crop_size, 256])
+    output = tf.reshape(output, [-1, proposal_count, crop_size, crop_size, crop_channel])
     
     return output
