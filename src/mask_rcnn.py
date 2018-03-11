@@ -2,7 +2,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.resnet import ResNet50
-from rpn import rpn_logits, decode_rois, refine_rois, crop_proposals, classifier
+from rpn import rpn_logits, decode_rois, refine_rois
+from rpn import crop_proposals, classifier, mask_classifier
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
@@ -17,13 +18,11 @@ def resnet50(X, training):
     ]
     shrink_ratios = [2, 3, 4, 5]
 
-    for layer in output_layers:
-        print(layer.get_shape().as_list(), layer.name)
-
     ############### DEBUG ###############
     if cfg.DEBUG:
-        for var in tf.global_variables():
-            print(var.name, var.get_shape().as_list())
+        pass
+        #for var in tf.global_variables():
+        #    print(var.name, var.get_shape().as_list())
         #for layer in output_layers:
         #    print('resnet layer shape: {}', layer.get_shape().as_list())
         #for key in layers.keys():
@@ -56,6 +55,9 @@ def mask_rcnn(X, network_feat_fn, training):
     anchors, loc, cls = rpn_logits(rpn_feats, shrink_ratios)
     rois = decode_rois(anchors, loc, cls)
     proposals = refine_rois(rois, training)
-    region_feats = crop_proposals(crop_feats, proposals, training)
-    class_logits, class_probs, reg_logits = classifer(region_feats, training)
-    return region_feats 
+
+    cls_feats = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
+    mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
+    class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
+    mask_logits = mask_classifier(mask_feats, training)
+    return class_logits, class_probs, bbox_logits, mask_logits

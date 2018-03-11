@@ -44,7 +44,7 @@ def rpn_logits(feats, ratios):
         num_anchors = anchors.get_shape().as_list()[-2]
         
         # predict cls, coordinate
-        conv_feat = slim.conv2d(feat, 512, 3, activation_fn = None)
+        conv_feat = slim.conv2d(feat, 512, 3)
         loc = slim.conv2d(conv_feat, num_anchors*4, 1,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001),
                     activation_fn=tf.nn.sigmoid)
@@ -158,9 +158,8 @@ def refine_rois(rois, training):
     final_proposal = tf.stack(roi_batch, axis=0)
     return final_proposal
 
-def crop_proposals(feats, boxes, training):
+def crop_proposals(feats, crop_size, boxes, training):
     crop_channel = cfg.crop_channel
-    crop_size = cfg.crop_size
     image_size = cfg.image_size
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
     x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]
@@ -190,7 +189,6 @@ def crop_proposals(feats, boxes, training):
     # encapsulate
     out = tf.concat(out, axis=0)
     original_ind = tf.concat(original_ind, axis=0)
-    print(out.shape, original_ind.shape)
 
     # re-arrange
     num_total_box = tf.shape(original_ind)[0]
@@ -202,8 +200,44 @@ def crop_proposals(feats, boxes, training):
     
     return output
 
+def mixture_conv_bn_relu(X, outChannel, kernel, training):
+    feat = tf.layers.conv2d(X, outChannel, kernel, padding='same', use_bias=False)
+    feat = tf.layers.batch_normalization(feat, training=training)
+    feat = tf.nn.relu(feat)
+    return feat
+
 def classifier(X, training):
+    num_classes = cfg.num_classes
     crop_size = cfg.crop_size
-    proposal_count = proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
-    feat = slim.conv2d(X, 1024, crop_size, activation_fn = None)
-    
+    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
+
+    # feature mixture
+    feat = mixture_conv_bn_relu(X, 1024, crop_size, training)
+    feat = mixture_conv_bn_relu(feat, 1024, 1, training)    
+
+    # predict
+    class_logits = tf.layers.conv2d(feat, num_classes, 1)
+    class_probs = tf.nn.softmax(class_logits)
+    bbox_logits = tf.layers.conv2d(feat, num_classes*4, 1, use_bias=False)
+
+    # rshape to [batch, proposal_count, N_cls]
+    class_logits = tf.reshape(class_logits, [-1, proposal_count, num_classes])
+    class_probs = tf.reshape(class_probs, [-1, proposal_count, num_classes])
+    bbox_logits = tf.reshape(bbox_logits, [-1, proposal_count, num_classes, 4])
+
+    return class_logits, class_probs, bbox_logits 
+
+def mask_classifier(X, training):
+    num_classes = cfg.num_classes
+    crop_size = cfg.mask_crop_size
+    proposal_count = cfg.proposal_count_train if training else cf.proposal_count_infer
+
+    feat = mixture_conv_bn_relu(X, 256, 3, training)
+    feat = mixture_conv_bn_relu(feat, 256, 3, training)
+    feat = mixture_conv_bn_relu(feat, 256, 3, training)
+    feat = mixture_conv_bn_relu(feat, 256, 3, training)
+    feat = tf.layers.conv2d_transpose(feat, 256, 2, strides=2, padding='same', activation=tf.nn.relu)
+    mask = tf.layers.conv2d(feat, num_classes, 1, activation=tf.sigmoid)
+    print(mask.shape, 'mask')
+    mask = tf.reshape(mask, [-1, proposal_count, crop_size*2, crop_size*2, num_classes])
+    return mask
