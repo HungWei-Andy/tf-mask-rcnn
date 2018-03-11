@@ -1,30 +1,36 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from tensorflow.contrib.slim.nets import resnet_v1
-from rpn import rpn_logits, decode_rois, refine_rois, crop_proposals
+from nets.resnet import ResNet50
+from rpn import rpn_logits, decode_rois, refine_rois, crop_proposals, classifier
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
 def resnet50(X, training):
-    _, layers = resnet_v1.resnet_v1_50(X, is_training=training)
+    net = ResNet50(istrain=training)
+    y = net(X)
     output_layers = [
-        layers['resnet_v1_50/block1'],
-        layers['resnet_v1_50/block2'],
-        layers['resnet_v1_50/block3'],
-        layers['resnet_v1_50/block4']
+        net.conv2,
+        net.conv3,
+        net.conv4,
+        net.conv5
     ]
-    shrink_ratios = [3, 4, 5, 5]
+    shrink_ratios = [2, 3, 4, 5]
+
+    for layer in output_layers:
+        print(layer.get_shape().as_list(), layer.name)
 
     ############### DEBUG ###############
     if cfg.DEBUG:
-        for layer in output_layers:
-            print('resnet layer shape: {}', layer.get_shape().as_list())
-        for key in layers.keys():
-            var = layers[key]
-            print(key, var, var.shape)
+        for var in tf.global_variables():
+            print(var.name, var.get_shape().as_list())
+        #for layer in output_layers:
+        #    print('resnet layer shape: {}', layer.get_shape().as_list())
+        #for key in layers.keys():
+        #    var = layers[key]
+        #    print(key, var, var.shape)
     #####################################
-    return output_layers, shrink_ratios
+    return output_layers, shrink_ratios, net
 
 def fpn(layers, ratios):
     crop_channel = cfg.crop_channel
@@ -45,10 +51,11 @@ def fpn(layers, ratios):
     return outputs, outputs[:-1], ratios
 
 def mask_rcnn(X, network_feat_fn, training):
-    feats, shrink_ratios = network_feat_fn(X, training)
+    feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     anchors, loc, cls = rpn_logits(rpn_feats, shrink_ratios)
     rois = decode_rois(anchors, loc, cls)
     proposals = refine_rois(rois, training)
     region_feats = crop_proposals(crop_feats, proposals, training)
+    class_logits, class_probs, reg_logits = classifer(region_feats, training)
     return region_feats 

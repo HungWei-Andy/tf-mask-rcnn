@@ -44,11 +44,11 @@ def rpn_logits(feats, ratios):
         num_anchors = anchors.get_shape().as_list()[-2]
         
         # predict cls, coordinate
-        conv_feat = slim.conv2d(feat, 512, 3)
+        conv_feat = slim.conv2d(feat, 512, 3, activation_fn = None)
         loc = slim.conv2d(conv_feat, num_anchors*4, 1,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001),
                     activation_fn=tf.nn.sigmoid)
-        cls = slim.conv2d(conv_feat, num_anchors*2, 1,
+        cls = slim.conv2d(conv_feat, num_anchors*2, 1, activation_fn = None,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001))
         cls = tf.nn.softmax(tf.reshape(cls, (-1, 2)))
 
@@ -162,7 +162,6 @@ def crop_proposals(feats, boxes, training):
     crop_channel = cfg.crop_channel
     crop_size = cfg.crop_size
     image_size = cfg.image_size
-    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
     x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]
     w = x2 - x1
@@ -199,6 +198,12 @@ def crop_proposals(feats, boxes, training):
     sort_ind = original_ind * num_total_box + ind_total_box
     ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
     output = tf.gather(out, ind)
-    output = tf.reshape(output, [-1, proposal_count, crop_size, crop_size, crop_channel])
+    output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
     
     return output
+
+def classifier(X, training):
+    crop_size = cfg.crop_size
+    proposal_count = proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
+    feat = slim.conv2d(X, 1024, crop_size, activation_fn = None)
+    
