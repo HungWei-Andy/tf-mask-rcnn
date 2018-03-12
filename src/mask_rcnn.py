@@ -2,8 +2,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.resnet import ResNet50
-from rpn_train import 
+from rpn_train import rpn_targets, classifier_targets
 from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
+from loss import compute_rpn_loss, compute_cls_loss
 from cnn import classifier, mask_classifier
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
@@ -53,14 +54,15 @@ def fpn(layers, ratios):
 def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_masks=None):
     feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
-    anchors, loc, cls = rpn_logits(rpn_feats, shrink_ratios)
+    anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
     
-    rois = decode_roi(anchors, loc, cls, X)
+    rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
-        proposals, cls_gt_labels, cls_gt_terms = classifier_targets(rois, gt_boxes, gt_classes) 
+        proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
+                                                rois, gt_boxes, gt_classes, gt_masks) #TODO
     else:
-        proposals = refine_rois(rois, training)
+        proposals = refine_rois(rois)
 
     cls_feats = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
     mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
@@ -70,5 +72,7 @@ def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_m
     # create loss
     loss = None
     if training:
-        loss_rpn_prob
+        loss_rpn = compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc)
+        loss_cls = compute_cls_loss(cls_logits, bbox_logits, mask_logits,
+                                    cls_gt_labels, cls_gt_terms, cls_gt_masks)
     return class_logits, class_probs, bbox_logits, mask_logits

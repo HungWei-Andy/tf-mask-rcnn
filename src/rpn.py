@@ -48,12 +48,11 @@ def rpn_logits(feats, ratios):
                     activation_fn=tf.nn.sigmoid)
         cls = slim.conv2d(conv_feat, num_anchors*2, 1, activation_fn = None,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001))
-        cls = tf.nn.softmax(tf.reshape(cls, (-1, 2)))
 
         # reshape into size(N, -1)
         out_anchors.append(tf.reshape(anchors, (-1, 4))) # shape: [H*W*N_anchor, 4]
         out_loc.append(tf.reshape(loc, (N_batch_tensor, -1, 4))) # shape: [N, H*W*num_anchor, 4]
-        out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2))) # shape: [N, H*W*num_anchor, 2]
+        out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2))) # shape: [N, H*W*num_anchor]
     out_anchors = tf.concat(out_anchors, axis=0)
     out_loc = tf.concat(out_loc, axis=1)
     out_cls = tf.concat(out_cls, axis=1)
@@ -94,7 +93,8 @@ def decode_roi(anchors, loc, cls, img_tensor):
     box_maxx = tf.minimum(W, box_ctrx + 0.5 * box_w - 1)
     box_maxy = tf.minimum(H, box_ctry + 0.5 * box_h - 1)
     boxes = tf.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
-    
+   
+    probs = tf.nn.softmax(cls) 
     probs = cls[:,:,1]
 
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
@@ -119,12 +119,12 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
 
     return boxes, probs
 
-def refine_rois(rois, training):
+def refine_rois(rois):
     image_size = cfg.image_size
     min_size = cfg.min_size
     nms_thresh = cfg.rpn_nms_thresh
-    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
-    batch_size = cfg.batch_size if training else 1
+    proposal_count = cfg.proposal_count_infer
+    batch_size = 1
     box_stddev = cfg.rpn_bbox_stddev
 
     pre_nms_topn = 12000

@@ -55,7 +55,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     - anchors: (N, 4) array
     - gt_boxes: (M, 4) groundtruths boxes
     RETURN
-    - labels: (N,), 1 for positive, 0 for negative, -1 for don't care
+    p labels: (N,), 1 for positive, 0 for negative, -1 for don't care
     - terms: (N, 4), regression terms for each positive anchors
     '''
     N, M = anchors.shape[0], gt_boxes.shape[0]
@@ -71,16 +71,16 @@ def rpn_target_one_batch(anchors, gt_boxes):
     labels[max_gt_iou < cfg.rpn_negative_iou] = 0 # iou < negative_thresh
 
     # filter out too many positive or negative
-    pos_inds = np.where(labels == 1)[0]
-    neg_inds = np.where(labels == 0)[0]
-    num_pos = int(cfg.rpn_pos_fraction * cfg.rpn_batchsize)
-    num_neg = cfg.rpn_batchsize - num_pos
-    if len(pos_inds) > num_pos:
-        disabled_ind = np.random.choice(pos_inds, size=num_pos-len(pos_inds), replace=False)
-        labels[disabled_ind] = -1
-    if len(neg_inds) > num_neg:
-        disabled_ind = np.random.choice(neg_inds, size=num_neg-len(neg_inds), replace=False)
-        labels[disabled_ind] = -1
+    #pos_inds = np.where(labels == 1)[0]
+    #neg_inds = np.where(labels == 0)[0]
+    #num_pos = int(cfg.rpn_pos_fraction * cfg.rpn_batchsize)
+    #num_neg = cfg.rpn_batchsize - num_pos
+    #if len(pos_inds) > num_pos:
+    #    disabled_ind = np.random.choice(pos_inds, size=num_pos-len(pos_inds), replace=False)
+    #    labels[disabled_ind] = -1
+    #if len(neg_inds) > num_neg:
+    #    disabled_ind = np.random.choice(neg_inds, size=num_neg-len(neg_inds), replace=False)
+    #    labels[disabled_ind] = -1
     
     # decide regression terms 
     terms = np.zeros((N,4), np.float32)-1
@@ -104,16 +104,18 @@ def rpn_targets(anchors, gt_boxes):
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
 
-def classifier_target_one_batch(rois, gt_boxes, gt_classes):
+def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     '''
     Choose foreground and background sample proposals
     - rois: (N,4) roi bboxes
     - gt_boxes: (M,4) groundtruth boxes
     - gt_classes: (M,) class label for each box
+    - gt_masks: TODO...
     RETURN
     - sampled_rois: (rois_per_img, 4) sampled rois
     - labels: (rois_per_img,) class labels for each foreground, -1 for background
     - loc: (rois_per_img, 4) encoded regression targets for each foreground, pad for bg
+    - mask: TODO...
     '''
     num_rois = cfg.rois_per_img
     num_fg = int(num_rois*cfg.rois_fg_ratio)
@@ -123,7 +125,7 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes):
     max_iou_ind = iou.argmax(axis=1)
     max_iou = iou[range(iou.shape[0]), max_iou_ind]
     fg_inds = np.where(max_iou>cfg.roi_fg_thresh)[0]
-    bg_inds = np.where((max_iou>cfg.roi_bg_thresh_low)&(max_iou<cfg.roi_bg_thresh_high))[0]
+    bg_inds = np.where((max_iou>=cfg.roi_bg_thresh_low)&(max_iou<cfg.roi_bg_thresh_high))[0]
 
     if fg_inds.size > 0 and bg_inds.size > 0:
         num_fg = min(num_fg, fg_inds.size)
@@ -144,7 +146,7 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes):
     loc[:num_fg, :] = encode_roi(sampled_rois[:num_fg, :], gt_boxes[fg_gt_inds, :])
     return sampled_rois, labels, loc 
 
-def classifier_targets(rois, gt_boxes, gt_classes):
+def classifier_targets(rois, gt_boxes, gt_classes, gt_masks):
     '''
     Return the esampled rois, their class, mask, encoded regression terms.
     - rois: (batch_size, proposal_count, 4) bounding boxes
@@ -162,8 +164,9 @@ def classifier_targets(rois, gt_boxes, gt_classes):
         gt = gt_boxes[i,:,:]
         roi = rois[i,:,:]
         gt_cls = gt_classes[i]
-        sampled_rois, sampled_cls, sampled_loc = tf.py_func(
-            classifier_target_one_batch, [roi, gt, gt_cls], [tf.float32, tf.int32])
+        gt_mask = gt_masks[i]
+        sampled_rois, sampled_cls, sampled_loc, sampled_mask = tf.py_func(
+            classifier_target_one_batch, [roi, gt, gt_cls, gt_mask], [tf.float32, tf.int32])
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 
