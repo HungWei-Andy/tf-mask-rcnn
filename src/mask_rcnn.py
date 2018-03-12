@@ -2,8 +2,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.resnet import ResNet50
-from rpn import rpn_logits, decode_rois, refine_rois
-from rpn import crop_proposals, classifier, mask_classifier
+from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
+from cnn import classifier, mask_classifier
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
@@ -53,8 +53,12 @@ def mask_rcnn(X, network_feat_fn, training):
     feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     anchors, loc, cls = rpn_logits(rpn_feats, shrink_ratios)
-    rois = decode_rois(anchors, loc, cls)
-    proposals = refine_rois(rois, training)
+    
+    rois = decode_roi(anchors, loc, cls, X)
+    if training:
+        proposals = refine_rois(rois, training) # remember to replace
+    else:
+        proposals = refine_rois(rois, training)
 
     cls_feats = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
     mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)

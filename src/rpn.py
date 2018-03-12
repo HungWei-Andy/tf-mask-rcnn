@@ -1,12 +1,11 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from tensorflow.contrib.slim.nets import resnet_v1
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
 def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=16):
-    inp_shape = feats.get_shape().as_list()
+    inp_shape = feats.get_shape()
     height, width = inp_shape[1], inp_shape[2]
     num_ratios = len(aspect_ratios)
     num_scales = len(scales)
@@ -24,11 +23,10 @@ def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=1
     
     base_anchors = np.hstack((ctr-0.5*(scale_wh-1), ctr+0.5*(scale_wh-1)))
     
-    anchors = np.zeros((width, height, num_ratios*num_scales, 4))
-    anchors[:, :, :, [0,2]] += stride * np.arange(width).reshape(-1,1,1,1)
-    anchors[:, :, :, [1,3]] += stride * np.arange(height).reshape(1,-1,1,1)
-    anchors += base_anchors.reshape(1,1,-1,4)
-    anchors = tf.convert_to_tensor(anchors)
+    anchors = ( stride * tf.reshape(tf.range(width), [-1,1,1,1])
+              + stride * tf.reshape(tf.range(height), [1,-1,1,1])
+              + base_anchors.reshape(1,1,-1,4) )
+    anchors = tf.cast(anchors, tf.float32)
     return anchors
 
 def rpn_logits(feats, ratios):
@@ -56,9 +54,16 @@ def rpn_logits(feats, ratios):
         out_anchors.append(tf.reshape(anchors, (-1, 4))) # shape: [H*W*N_anchor, 4]
         out_loc.append(tf.reshape(loc, (N_batch_tensor, -1, 4))) # shape: [N, H*W*num_anchor, 4]
         out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2))) # shape: [N, H*W*num_anchor, 2]
+    out_anchors = tf.concat(out_anchors, axis=0)
+    out_loc = tf.concat(out_loc, axis=1)
+    out_cls = tf.concat(out_cls, axis=1)
+    print('anchor shape', out_anchors.get_shape().as_list())
+    print('loc shape', out_loc.get_shape().as_list())
+    print('cls shape', out_cls.get_shape().as_list())
     return out_anchors, out_loc, out_cls
 
-def decode_roi(anchors, loc, cls):
+
+def decode_roi(anchors, loc, cls, img_tensor):
     '''
     Inputs
       - anchors: anchor boxes, a tensor of shape [H*W*N_anchor, 4]
@@ -70,39 +75,29 @@ def decode_roi(anchors, loc, cls):
                decoded [xmin, ymin, xmax, ymax] for each box
       - probs: probability of object, a tensor of shape [N, H*W*N_anchor]
     '''
-    image_size = cfg.image_size
-    anchors = anchors[np.newaxis, :, :]
+    H, W = img_tensor.get_shape()[1:3]
+    H, W = tf.cast(H, tf.float32), tf.cast(W, tf.float32)
+    anchors = tf.expand_dims(anchors, axis=1)
+    
     anc_widths = anchors[:,:,2] - anchors[:,:, 0] + 1
     anc_heights = anchors[:,:,3] - anchors[:,:,1] + 1
     anc_ctrx = anchors[:,:,0] + 0.5 * anc_widths
-    anc_ctry = anchors[:,:,0] + 0.5 * anc_heights
+    anc_ctry = anchors[:,:,1] + 0.5 * anc_heights
     
-    box_ctrx = boxvar[:,:,0] * 0.1 * anc_widths + anc_ctrx
-    box_ctry = boxvar[:,:,1] * 0.1 * anc_heights + anc_ctry
-    box_w = anc_widths * np.exp(boxvar[:,:,2] * 0.2)
-    box_h = anc_heights * np.exp(boxvar[:,:,3] * 0.2)
+    box_ctrx = loc[:,:,0] * 0.1 * anc_widths + anc_ctrx
+    box_ctry = loc[:,:,1] * 0.1 * anc_heights + anc_ctry
+    box_w = anc_widths * tf.exp(loc[:,:,2] * 0.2)
+    box_h = anc_heights * tf.exp(loc[:,:,3] * 0.2)
     
-    boxes = np.zeros(boxvar.shape, dtype=boxvar.dtype)
-    boxes[:,:,0] = box_ctrx - 0.5 * box_w
-    boxes[:,:,1] = box_ctry - 0.5 * box_h
-    boxes[:,:,2] = box_ctrx + 0.5 * box_w - 1
-    boxes[:,:,3] = box_ctry + 0.5 * box_h - 1
-    boxes = np.maximum(0.0, np.minimum(image_size, boxes))
+    box_minx = tf.maximum(0.0, box_ctrx - 0.5 * box_w)
+    box_miny = tf.maximum(0.0, box_ctry - 0.5 * box_h)
+    box_maxx = tf.minimum(W, box_ctrx + 0.5 * box_w - 1)
+    box_maxy = tf.minimum(H, box_ctry + 0.5 * box_h - 1)
+    boxes = tf.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
     
     probs = cls[:,:,1]
-    return boxes, probs
 
-def decode_rois(anchors, locs, clses):
-    list_probs, list_boxes = [], []
-    for i in range(len(anchors)):
-        anchor, loc, cls = anchors[i], locs[i], clses[i]
-        boxes, probs = tf.py_func(decode_roi, [anchor, loc, cls], [tf.float32, tf.float32])
-        list_probs.append(probs)
-        list_boxes.append(boxes)
-
-    rois = {}
-    rois['prob'] = tf.concat(list_probs, axis=1)
-    rois['box'] = tf.concat(list_boxes, axis=1)
+    rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
     return rois
 
 def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
@@ -113,7 +108,6 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
     _, order = tf.nn.top_k(probs, pre_nms_topn)
     boxes = tf.gather(boxes, order)
     probs = tf.gather(probs, order)
-    return boxes, probs
 
     # filter too small boxes
     normalized_box = boxes / image_size
@@ -200,44 +194,3 @@ def crop_proposals(feats, crop_size, boxes, training):
     
     return output
 
-def mixture_conv_bn_relu(X, outChannel, kernel, training):
-    feat = tf.layers.conv2d(X, outChannel, kernel, padding='same', use_bias=False)
-    feat = tf.layers.batch_normalization(feat, training=training)
-    feat = tf.nn.relu(feat)
-    return feat
-
-def classifier(X, training):
-    num_classes = cfg.num_classes
-    crop_size = cfg.crop_size
-    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
-
-    # feature mixture
-    feat = mixture_conv_bn_relu(X, 1024, crop_size, training)
-    feat = mixture_conv_bn_relu(feat, 1024, 1, training)    
-
-    # predict
-    class_logits = tf.layers.conv2d(feat, num_classes, 1)
-    class_probs = tf.nn.softmax(class_logits)
-    bbox_logits = tf.layers.conv2d(feat, num_classes*4, 1, use_bias=False)
-
-    # rshape to [batch, proposal_count, N_cls]
-    class_logits = tf.reshape(class_logits, [-1, proposal_count, num_classes])
-    class_probs = tf.reshape(class_probs, [-1, proposal_count, num_classes])
-    bbox_logits = tf.reshape(bbox_logits, [-1, proposal_count, num_classes, 4])
-
-    return class_logits, class_probs, bbox_logits 
-
-def mask_classifier(X, training):
-    num_classes = cfg.num_classes
-    crop_size = cfg.mask_crop_size
-    proposal_count = cfg.proposal_count_train if training else cf.proposal_count_infer
-
-    feat = mixture_conv_bn_relu(X, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
-    feat = tf.layers.conv2d_transpose(feat, 256, 2, strides=2, padding='same', activation=tf.nn.relu)
-    mask = tf.layers.conv2d(feat, num_classes, 1, activation=tf.sigmoid)
-    print(mask.shape, 'mask')
-    mask = tf.reshape(mask, [-1, proposal_count, crop_size*2, crop_size*2, num_classes])
-    return mask
