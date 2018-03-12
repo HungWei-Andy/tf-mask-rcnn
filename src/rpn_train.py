@@ -68,7 +68,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     labels = np.zeros(N)-1
     labels[max_anchor_ind] = 1 # maximum iou with each groundtruth
     labels[max_gt_iou > cfg.rpn_positive_iou] = 1 # iou > postive_thresh
-    labels[max_gt_iou < cfg.rpn_negative_iou[ = 0 # iou < negative_thresh
+    labels[max_gt_iou < cfg.rpn_negative_iou] = 0 # iou < negative_thresh
 
     # filter out too many positive or negative
     pos_inds = np.where(labels == 1)[0]
@@ -89,6 +89,14 @@ def rpn_target_one_batch(anchors, gt_boxes):
     return labels, terms
 
 def rpn_targets(anchors, gt_boxes):
+    '''
+    Return the labels and for all anchors w.r.t each image
+    - anchors: (N,4) tensor, the 
+    - gt_boxes: a list of (K,2) array, K is the number of gt for each image
+    RETURN
+    - out_labels: (M,N) target labels tensor for M image, N anchors
+    - out_terms: (M,N,4) encoded target terms tensor for M image, N anchors
+    '''
     out_labels, out_terms = [], []
     for gt in gt_boxes:
         labels, terms = tf.py_func(rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
@@ -96,5 +104,68 @@ def rpn_targets(anchors, gt_boxes):
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
 
-def classifier_targets():
-    pass
+def classifier_target_one_batch(rois, gt_boxes, gt_classes):
+    '''
+    Choose foreground and background sample proposals
+    - rois: (N,4) roi bboxes
+    - gt_boxes: (M,4) groundtruth boxes
+    - gt_classes: (M,) class label for each box
+    RETURN
+    - sampled_rois: (rois_per_img, 4) sampled rois
+    - labels: (rois_per_img,) class labels for each foreground, -1 for background
+    - loc: (rois_per_img, 4) encoded regression targets for each foreground, pad for bg
+    '''
+    num_rois = cfg.rois_per_img
+    num_fg = int(num_rois*cfg.rois_fg_ratio)
+    num_bg = num_rois - num_fg
+    
+    iou = bbox_overlaps(rois, gt_boxes)
+    max_iou_ind = iou.argmax(axis=1)
+    max_iou = iou[range(iou.shape[0]), max_iou_ind]
+    fg_inds = np.where(max_iou>cfg.roi_fg_thresh)[0]
+    bg_inds = np.where((max_iou>cfg.roi_bg_thresh_low)&(max_iou<cfg.roi_bg_thresh_high))[0]
+
+    if fg_inds.size > 0 and bg_inds.size > 0:
+        num_fg = min(num_fg, fg_inds.size)
+        fg_inds = np.random.choice(fg_inds, size=num_fg, replace=False)
+        num_bg = num_rois - num_fg
+        bg_inds = np.random.choice(bg_inds, size=num_bg, replace=num_bg>bg_inds.size)
+    elif fg_inds.size > 0:
+        fg_inds = np.random.choice(fg_inds, size=num_rois, replace=num_rois>fg_inds.size)
+        num_fg, num_bg = num_rois, 0
+    elif bg_inds.size > 0:    
+        bg_inds = np.random.choice(bg_inds, size=num_rois, replace=num_rois>bg_inds.size)
+        num_fg, num_bg = 0, num_rois
+
+    sampled_rois = rois[np.append(fg_inds, bg_inds), :]
+    fg_gt_inds = max_iou_ind[fg_inds]
+    labels = np.append(gt_classes[fg_gt_inds], -np.ones(num_bg))
+    loc = np.zeros((num_rois, 4), np.float32)
+    loc[:num_fg, :] = encode_roi(sampled_rois[:num_fg, :], gt_boxes[fg_gt_inds, :])
+    return sampled_rois, labels, loc 
+
+def classifier_targets(rois, gt_boxes, gt_classes):
+    '''
+    Return the esampled rois, their class, mask, encoded regression terms.
+    - rois: (batch_size, proposal_count, 4) bounding boxes
+    - gt_boxes: list of len(batch_size) where gt_boxes[i] is a (N,4) tensor for each gt
+    - gt_classes: list of len(batch_size) where gt_classes[i] is a (N,) tensor for the
+                  class label of each groundtruth box
+    RETURN
+    - rois_ind: (N, proposal_batch_size, 4), sampled proposal bbox
+    - cls: (N, proposal_batch_size), class label of each sampled proposal
+    - loc: (N, proposal_batch_size, 4), regression terms of each sampled proposal
+    '''
+    batch_size = cfg.batch_size
+    rois, cls, loc = list(), list(), list()
+    for i in range(batch_size):
+        gt = gt_boxes[i,:,:]
+        roi = rois[i,:,:]
+        gt_cls = gt_classes[i]
+        sampled_rois, sampled_cls, sampled_loc = tf.py_func(
+            classifier_target_one_batch, [roi, gt, gt_cls], [tf.float32, tf.int32])
+        rois.append(sampled_rois)
+        cls.append(sampled_cls)
+        loc.append(sampled_loc) 
+    rois, cls, loc = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0)
+    return rois, cls, loc

@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.resnet import ResNet50
+from rpn_train import 
 from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
 from cnn import classifier, mask_classifier
 from config import cfg
@@ -49,14 +50,15 @@ def fpn(layers, ratios):
 
     return outputs, outputs[:-1], ratios
 
-def mask_rcnn(X, network_feat_fn, training):
+def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_masks=None):
     feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     anchors, loc, cls = rpn_logits(rpn_feats, shrink_ratios)
     
     rois = decode_roi(anchors, loc, cls, X)
     if training:
-        proposals = refine_rois(rois, training) # remember to replace
+        rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
+        proposals, cls_gt_labels, cls_gt_terms = classifier_targets(rois, gt_boxes, gt_classes) 
     else:
         proposals = refine_rois(rois, training)
 
@@ -64,4 +66,9 @@ def mask_rcnn(X, network_feat_fn, training):
     mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
     class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
     mask_logits = mask_classifier(mask_feats, training)
+
+    # create loss
+    loss = None
+    if training:
+        loss_rpn_prob
     return class_logits, class_probs, bbox_logits, mask_logits
