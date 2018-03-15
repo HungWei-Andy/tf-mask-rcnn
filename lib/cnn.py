@@ -14,7 +14,7 @@ def classifier(X, training):
 
     # feature mixture
     feat = mixture_conv_bn_relu(X, 1024, crop_size, training)
-    feat = mixture_conv_bn_relu(feat, 1024, 1, training)    
+    feat = mixture_conv_bn_relu(feat, 2048, 1, training)    
 
     # predict
     class_logits = tf.layers.conv2d(feat, num_classes, 1)

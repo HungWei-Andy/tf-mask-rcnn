@@ -110,12 +110,12 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     - rois: (N,4) roi bboxes
     - gt_boxes: (M,4) groundtruth boxes
     - gt_classes: (M,) class label for each box
-    - gt_masks: TODO...
+    - gt_masks: (M,H,W) binary label for each groundtruth instance
     RETURN
     - sampled_rois: (rois_per_img, 4) sampled rois
-    - labels: (rois_per_img,) class labels for each foreground, -1 for background
+    - labels: (rois_per_img,) class labels for each foreground, 0 for background
     - loc: (rois_per_img, 4) encoded regression targets for each foreground, pad for bg
-    - mask: TODO...
+    - mask: (rois_per_img, mask_output_size, mask_output_size, num_classes) class mask
     '''
     num_rois = cfg.rois_per_img
     num_fg = int(num_rois*cfg.rois_fg_ratio)
@@ -139,12 +139,27 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
         bg_inds = np.random.choice(bg_inds, size=num_rois, replace=num_rois>bg_inds.size)
         num_fg, num_bg = 0, num_rois
 
+    TODO, mask
+
+    # rois
     sampled_rois = rois[np.append(fg_inds, bg_inds), :]
+    # labels
     fg_gt_inds = max_iou_ind[fg_inds]
-    labels = np.append(gt_classes[fg_gt_inds], -np.ones(num_bg))
+    labels = np.append(gt_classes[fg_gt_inds], np.zeros(num_bg))
+    # box
     loc = np.zeros((num_rois, 4), np.float32)
-    loc[:num_fg, :] = encode_roi(sampled_rois[:num_fg, :], gt_boxes[fg_gt_inds, :])
-    return sampled_rois, labels, loc 
+    box_pred = sampled_rois[:num_fg, :]
+    box_gt = gt_boxes[fg_gt_inds, :]
+    loc[:num_fg, :] = encode_roi(box_pred, box_gt)
+    # intersection
+    intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
+                              np.minimum(box_pred[:,2:], box_gt[:,2:])))
+    all_masks = np.zeros((len(ft_gt_inds), gt_masks.shape[1],
+                          gt_masks.shape[2], cfg.num_classes), np.float32)
+    for i, fg_ind in enumerate(fg_gt_inds):
+        all_masks[i, :, :, gt_classes[fg_ind]] = gt_masks[i, :, :]  
+
+    return sampled_rois, labels, loc, intersection, all_masks
 
 def classifier_targets(rois, gt_boxes, gt_classes, gt_masks):
     '''
@@ -153,22 +168,27 @@ def classifier_targets(rois, gt_boxes, gt_classes, gt_masks):
     - gt_boxes: list of len(batch_size) where gt_boxes[i] is a (N,4) tensor for each gt
     - gt_classes: list of len(batch_size) where gt_classes[i] is a (N,) tensor for the
                   class label of each groundtruth box
+    - gt_masks: list of len(batch_size) where gt_masks[i] is a (N,H,W) tensor for the
+                mask of each groundtruth instance
     RETURN
     - rois_ind: (N, proposal_batch_size, 4), sampled proposal bbox
     - cls: (N, proposal_batch_size), class label of each sampled proposal
     - loc: (N, proposal_batch_size, 4), regression terms of each sampled proposal
+    - 
     '''
     batch_size = cfg.batch_size
-    rois, cls, loc = list(), list(), list()
+    rois, cls, loc, mask = list(), list(), list(), list()
     for i in range(batch_size):
         gt = gt_boxes[i,:,:]
         roi = rois[i,:,:]
         gt_cls = gt_classes[i]
         gt_mask = gt_masks[i]
-        sampled_rois, sampled_cls, sampled_loc, sampled_mask = tf.py_func(
+        sampled_rois, sampled_cls, sampled_loc, inter, all_masks = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask], [tf.float32, tf.int32])
+        sampled_mask = tf.image.crop_and_resize(all_masks, inter, tf.range(tf.shape(all_masks, 0)), cfg.mask_crop_size*2)
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 
-    rois, cls, loc = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0)
-    return rois, cls, loc
+        mask.append(sampled_mask)
+    rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
+    return rois, cls, loc, mask

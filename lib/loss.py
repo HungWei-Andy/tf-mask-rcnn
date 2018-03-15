@@ -45,6 +45,11 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc=10):
 
 def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask):
     num_classes = cfg.num_classes
+
+    valid_ind = tf.where(gt_cls > 0)
+    loc, gt_loc = tf.gather(loc, valid_ind), tf.gather(gt_loc, valid_ind)
+    mask, gt_mask = tf.gather(mask, valid_ind), tf.gather(gt_mask, valid_ind)
+
     cls, gt_cls = tf.reshape(cls, (-1,2)), tf.reshape(gt_cls, [-1])
     loc, gt_loc = tf.reshape(loc, (-1,4)), tf.reshape(gt_loc, (-1,4))
     mask, gt_mask = tf.reshape(mask, (-1,num_classes)), tf.reshape(gt_mask, (-1,num_classes))

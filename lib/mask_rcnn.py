@@ -52,6 +52,12 @@ def fpn(layers, ratios):
     return outputs, outputs[:-1], ratios
 
 def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_masks=None):
+    '''
+    X: NHWC tensor
+    gt_boxes: N length of list (num_boxes, 4) coordinates for each image
+    gt_classes: N length of list (num_boxes,) label for each image
+    gt_masks: N length of list (num_boxes, H, W) binary mask for each iamge
+    '''
     feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
@@ -60,7 +66,7 @@ def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_m
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
         proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
-                                                rois, gt_boxes, gt_classes, gt_masks) #TODO
+                                                rois, gt_boxes, gt_classes, gt_masks)
     else:
         proposals = refine_rois(rois)
 
