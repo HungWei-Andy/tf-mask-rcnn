@@ -1,4 +1,5 @@
 import tensorflow as tf
+from config import cfg
 
 def smooth_l1_loss(dist):
     dist = tf.reshape(dist, [-1])
@@ -20,21 +21,18 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
     return
     - loss: a scalar tensor for rpn loss
     '''
-    batch_size, total_anchors = cls.get_shape()[:2]
+    batch_size, total_anchors = cls.get_shape().as_list()[:2]
     
-    cls = tf.reshape(cls, (-1,2))
-    loc = tf.reshape(loc, (-1,4))
-    gt_cls = tf.reshape(gt_cls, (-1,2))
-    gt_loc = tf.reshape(gt_loc, (-1,4))
-
     valid_ind = tf.where(gt_cls >= 0)
     pos_ind = tf.where(gt_cls == 1)
 
-    cls = tf.gather(cls, valid_ind)
-    gt_cls = tf.gather(gt_cls, valid_ind)
     print(gt_cls.shape, cls.shape)
+    cls = tf.gather_nd(cls, valid_ind)
+    gt_cls = tf.gather_nd(gt_cls, valid_ind)
+    print(gt_cls, cls)
     loss_cls = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls)
-    loss_cls = loss_cls * total_anchors
+    print(loss_cls)
+    loss_cls = tf.reduce_sum(loss_cls) * total_anchors
     loss['rpn_cls'] = loss_cls
 
     loc = tf.gather(loc, pos_ind)
@@ -45,7 +43,7 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
 
     loss['rpn'] = loss_cls + loss_loc * delta_loc
 
-def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask):
+def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     num_classes = cfg.num_classes
 
     valid_ind = tf.where(gt_cls > 0)

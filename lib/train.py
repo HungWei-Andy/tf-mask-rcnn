@@ -2,6 +2,9 @@ import os
 from os.path import join, dirname
 import random
 import skimage
+import skimage.io
+import numpy as np
+import tensorflow as tf
 
 import sys
 sys.path.append(join(dirname(__file__), 'cocoapi', 'PythonAPI'))
@@ -10,7 +13,6 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from pycocotools import mask as maskUtils
 
-import tensorflow as tf
 from mask_rcnn import mask_rcnn
 from config import cfg
 
@@ -27,7 +29,7 @@ class COCOLoader(object):
     return len(self.imgInds)
 
   def __getitem__(self, image_index):
-    imgInd = self.imgInds[self.shuffleIds[image_index]]
+    imgInd = self.imgIds[self.shuffleIds[image_index]]
     img = self.coco.imgs[imgInd]
     height, width = img['height'], img['width']
 
@@ -37,13 +39,13 @@ class COCOLoader(object):
       image = skimage.color.gray2rgb(image)
     image = image[np.newaxis, :, :, :]
     image = tf.convert_to_tensor(image)
-    image = tf.image.crop_and_resize(img_tensor,
+    image = tf.image.crop_and_resize(image,
                                      [[0.25, 0.25, 0.75, 0.75]], [0],
                                      [cfg.image_size, cfg.image_size])
     
     # read annotations
-    annIds = self.coco.getAnnIds(annIds=imgInd)
-    anns = coco.loadAnns(annIds)
+    annIds = self.coco.getAnnIds(imgIds=imgInd)
+    anns = self.coco.loadAnns(annIds)
     anns = [ann for ann in anns if not ann['iscrowd']]
 
     # load image mask, bbox and remove too small masks
@@ -51,7 +53,7 @@ class COCOLoader(object):
     boxes = []
     cats = []
     for ann in anns:
-      rle = coco.annToRLE(ann, height, width)
+      rle = self.coco.annToRLE(ann)
       m = maskUtils.decode(rle)
       if m.max() == 1:
         masks.append(m)
@@ -63,7 +65,7 @@ class COCOLoader(object):
 
     return {'img': image, 'box': boxes, 'mask': masks, 'class': cats}
 
-def extract_batch(self, start_index):
+def extract_batch(data, start_index):
   index = start_index
   imgs, boxes, masks, classes = [], [], [], []
   for cnt in range(cfg.batch_size):
@@ -89,7 +91,7 @@ def train():
   loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
   optimizer = tf.train.AdamOptimizer()
-  opt = optimizer.minimize(loss)
+  opt = optimizer.minimize(loss['all'])
   saver = tf.train.Saver(max_to_keep=100)
 
   with tf.Session() as sess:

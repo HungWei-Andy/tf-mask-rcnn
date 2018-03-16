@@ -100,8 +100,6 @@ def rpn_targets(anchors, gt_boxes):
     out_labels, out_terms = [], []
     for gt in gt_boxes:
         labels, terms = tf.py_func(rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
-        print('labels', labels)
-        print('terms', terms)
         out_labels.append(labels)
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
@@ -186,12 +184,6 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         sampled_rois, sampled_cls, sampled_loc, inter, all_masks, num_fg = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
             [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
-        print('cand_rois', cand_rois)
-        print('gt_boxes', gt_boxes)
-        print('gt_classes', gt_classes)
-        print('gt_masks', gt_masks)
-        print('rois', sampled_rois)
-        print('mask', all_masks)
         sampled_mask = tf.image.crop_and_resize(all_masks, inter/cfg.image_size,
                                                 tf.range(num_fg),
                                                 [cfg.mask_crop_size*2]*2)

@@ -80,8 +80,9 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     # create loss
     if training:
         loss = {}
+        print(rpn_cls.get_shape(), rpn_gt_labels.get_shape())
         compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc, loss)
-        compute_cls_loss(cls_logits, bbox_logits, mask_logits, cls_gt_labels,
+        compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
                          cls_gt_terms, cls_gt_masks, loss)
         loss['all'] = loss['rpn'] + loss['classifier']
         return loss, net

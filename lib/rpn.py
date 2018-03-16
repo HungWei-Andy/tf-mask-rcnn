@@ -33,7 +33,6 @@ def rpn_logits(feats, ratios):
     out_anchors = []
     out_loc = []
     out_cls = []
-    N_batch_tensor = tf.shape(feats[0])[0]
     for i, feat in enumerate(feats):
         ratio = ratios[i]
         
@@ -49,10 +48,10 @@ def rpn_logits(feats, ratios):
         cls = slim.conv2d(conv_feat, num_anchors*2, 1, activation_fn = None,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001))
 
-        # reshape into size(N, -1)
+        # reshape into size(N, -18)
         out_anchors.append(tf.reshape(anchors, (-1, 4))) # shape: [H*W*N_anchor, 4]
-        out_loc.append(tf.reshape(loc, (N_batch_tensor, -1, 4))) # shape: [N, H*W*num_anchor, 4]
-        out_cls.append(tf.reshape(cls, (N_batch_tensor, -1, 2))) # shape: [N, H*W*num_anchor]
+        out_loc.append(tf.reshape(loc, (cfg.batch_size, -1, 4))) # shape: [N, H*W*num_anchor, 4]
+        out_cls.append(tf.reshape(cls, (cfg.batch_size, -1, 2))) # shape: [N, H*W*num_anchor]
     out_anchors = tf.concat(out_anchors, axis=0)
     out_loc = tf.concat(out_loc, axis=1)
     out_cls = tf.concat(out_cls, axis=1)
