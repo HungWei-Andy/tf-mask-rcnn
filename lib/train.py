@@ -84,6 +84,39 @@ def extract_batch(data, start_index):
   imgs = np.stack(imgs, axis=0)
   return imgs, boxes, classes, masks, index
 
+def debug():
+  image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
+  data = COCOLoader(image_dir, shuffle=True)
+  
+  X = tf.placeholder(tf.float32, shape=(cfg.batch_size,
+                                        cfg.image_size, cfg.image_size, 3))
+  gt_boxes = [tf.placeholder(tf.float32, shape=(None, 4)) for i in range(cfg.batch_size)]
+  gt_classes = [tf.placeholder(tf.int32, shape=[None]) for i in range(cfg.batch_size)]
+  gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size))
+              for i in range(cfg.batch_size)]
+  feat, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+
+  saver = tf.train.Saver(max_to_keep=100)
+
+  with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
+
+    data_index = 0
+    for i in range(cfg.iterations):
+      train_img, train_box, train_cls, train_mask, data_index = extract_batch(data, data_index)
+      feed_dict = {}
+      feed_dict[X] = train_img
+      for ind, box_tensor in enumerate(gt_boxes):
+        feed_dict[box_tensor] = train_box[ind]
+      for ind, cls_tensor in enumerate(gt_classes):
+        feed_dict[cls_tensor] = train_cls[ind]
+      for ind, mask_tensor in enumerate(gt_masks):
+        feed_dict[mask_tensor] = train_mask[ind]
+      _ = sess.run(feat, feed_dict = feed_dict)
+       
+      print('iteration %d completed'%i)
+
 def train():
   image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
   data = COCOLoader(image_dir, shuffle=True)
@@ -131,4 +164,4 @@ def train():
         saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))
 
 if __name__ == '__main__':
-  train()
+  debug() #train()

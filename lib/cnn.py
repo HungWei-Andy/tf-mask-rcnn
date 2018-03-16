@@ -13,8 +13,8 @@ def classifier(X, training):
     proposal_count = cfg.rois_per_img if training else cfg.proposal_count_infer
 
     # feature mixture
-    feat = mixture_conv_bn_relu(X, 512, crop_size, training)
-    feat = mixture_conv_bn_relu(feat, 512, 1, training)    
+    feat = mixture_conv_bn_relu(X, 10, crop_size, training)
+    feat = mixture_conv_bn_relu(feat, 10, 1, training)    
 
     # predict
     class_logits = tf.layers.conv2d(feat, num_classes, 1)
@@ -33,10 +33,10 @@ def mask_classifier(X, training):
     crop_size = cfg.mask_crop_size
     proposal_count = cfg.rois_per_img if training else cf.proposal_count_infer
 
-    feat = mixture_conv_bn_relu(X, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
-    feat = mixture_conv_bn_relu(feat, 256, 3, training)
+    feat = mixture_conv_bn_relu(X, 10, 3, training)
+    feat = mixture_conv_bn_relu(feat, 10, 3, training)
+    feat = mixture_conv_bn_relu(feat, 10, 3, training)
+    feat = mixture_conv_bn_relu(feat, 10, 3, training)
     feat = tf.layers.conv2d_transpose(feat, 256, 2, strides=2, padding='same', activation=tf.nn.relu)
     mask = tf.layers.conv2d(feat, num_classes, 1, activation=tf.sigmoid)
     mask = tf.reshape(mask, [-1, proposal_count, crop_size*2, crop_size*2, num_classes])

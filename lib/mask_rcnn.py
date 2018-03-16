@@ -65,6 +65,7 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
     
     rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
+    return rois, net
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
         proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
