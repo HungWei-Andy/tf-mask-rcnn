@@ -56,9 +56,6 @@ def rpn_logits(feats, ratios):
     out_anchors = tf.concat(out_anchors, axis=0)
     out_loc = tf.concat(out_loc, axis=1)
     out_cls = tf.concat(out_cls, axis=1)
-    print('anchor shape', out_anchors.get_shape().as_list())
-    print('loc shape', out_loc.get_shape().as_list())
-    print('cls shape', out_cls.get_shape().as_list())
     return out_anchors, out_loc, out_cls
 
 
@@ -100,7 +97,7 @@ def decode_roi(anchors, loc, cls, img_tensor):
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
     return rois
 
-def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
+def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn, ):
     image_size = cfg.image_size
     min_size = cfg.min_size
 
@@ -177,7 +174,7 @@ def crop_proposals(feats, crop_size, boxes, training):
         cur_boxes = tf.stop_gradient(cur_boxes)
         batch_ind = tf.stop_gradient(batch_ind)
        
-        out = tf.image.crop_and_resize(feats[i], cur_boxes, batch_ind, [crop_size, crop_size])
+        out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
         outputs.append(out)
 
     # encapsulate

@@ -100,6 +100,8 @@ def rpn_targets(anchors, gt_boxes):
     out_labels, out_terms = [], []
     for gt in gt_boxes:
         labels, terms = tf.py_func(rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
+        print('labels', labels)
+        print('terms', terms)
         out_labels.append(labels)
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
@@ -114,11 +116,11 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     RETURN
     - sampled_rois: (rois_per_img, 4) sampled rois
     - labels: (rois_per_img,) class labels for each foreground, 0 for background
-    - loc: (rois_per_img, 4) encoded regression targets for each foreground, pad for bg
-    - mask: (rois_per_img, mask_output_size, mask_output_size, num_classes) class mask
+    - loc: (fg_per_img, 4) encoded regression targets for each foreground, pad for bg
+    - mask: (fg_per_img, mask_output_size, mask_output_size, num_classes) class mask
     '''
     num_rois = cfg.rois_per_img
-    num_fg = int(num_rois*cfg.rois_fg_ratio)
+    num_fg = cfg.fg_per_img
     num_bg = num_rois - num_fg
     
     iou = bbox_overlaps(rois, gt_boxes)
@@ -139,8 +141,6 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
         bg_inds = np.random.choice(bg_inds, size=num_rois, replace=num_rois>bg_inds.size)
         num_fg, num_bg = 0, num_rois
 
-    TODO, mask
-
     # rois
     sampled_rois = rois[np.append(fg_inds, bg_inds), :]
     # labels
@@ -159,9 +159,9 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     for i, fg_ind in enumerate(fg_gt_inds):
         all_masks[i, :, :, gt_classes[fg_ind]] = gt_masks[i, :, :]  
 
-    return sampled_rois, labels, loc, intersection, all_masks
+    return sampled_rois, labels, loc, intersection, all_masks, num_fg
 
-def classifier_targets(rois, gt_boxes, gt_classes, gt_masks):
+def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     '''
     Return the esampled rois, their class, mask, encoded regression terms.
     - rois: (batch_size, proposal_count, 4) bounding boxes
@@ -179,13 +179,22 @@ def classifier_targets(rois, gt_boxes, gt_classes, gt_masks):
     batch_size = cfg.batch_size
     rois, cls, loc, mask = list(), list(), list(), list()
     for i in range(batch_size):
-        gt = gt_boxes[i,:,:]
-        roi = rois[i,:,:]
+        gt = gt_boxes[i]
+        roi = cand_rois[i,:,:]
         gt_cls = gt_classes[i]
         gt_mask = gt_masks[i]
-        sampled_rois, sampled_cls, sampled_loc, inter, all_masks = tf.py_func(
-            classifier_target_one_batch, [roi, gt, gt_cls, gt_mask], [tf.float32, tf.int32])
-        sampled_mask = tf.image.crop_and_resize(all_masks, inter, tf.range(tf.shape(all_masks, 0)), cfg.mask_crop_size*2)
+        sampled_rois, sampled_cls, sampled_loc, inter, all_masks, num_fg = tf.py_func(
+            classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
+            [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
+        print('cand_rois', cand_rois)
+        print('gt_boxes', gt_boxes)
+        print('gt_classes', gt_classes)
+        print('gt_masks', gt_masks)
+        print('rois', sampled_rois)
+        print('mask', all_masks)
+        sampled_mask = tf.image.crop_and_resize(all_masks, inter/cfg.image_size,
+                                                tf.range(num_fg),
+                                                [cfg.mask_crop_size*2]*2)
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 

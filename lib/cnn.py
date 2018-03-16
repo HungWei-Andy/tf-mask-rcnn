@@ -10,7 +10,7 @@ def mixture_conv_bn_relu(X, outChannel, kernel, training):
 def classifier(X, training):
     num_classes = cfg.num_classes
     crop_size = cfg.crop_size
-    proposal_count = cfg.proposal_count_train if training else cfg.proposal_count_infer
+    proposal_count = cfg.rois_per_img if training else cfg.proposal_count_infer
 
     # feature mixture
     feat = mixture_conv_bn_relu(X, 1024, crop_size, training)
@@ -31,7 +31,7 @@ def classifier(X, training):
 def mask_classifier(X, training):
     num_classes = cfg.num_classes
     crop_size = cfg.mask_crop_size
-    proposal_count = cfg.proposal_count_train if training else cf.proposal_count_infer
+    proposal_count = cfg.rois_per_img if training else cf.proposal_count_infer
 
     feat = mixture_conv_bn_relu(X, 256, 3, training)
     feat = mixture_conv_bn_relu(feat, 256, 3, training)

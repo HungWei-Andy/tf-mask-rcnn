@@ -9,7 +9,7 @@ def smooth_l1_loss(dist):
     loss_outside = tf.reduce_sum(dist - 0.5)
     return loss_inside + loss_outside
 
-def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc=10):
+def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
     '''
     compute total rpn loss
     - cls: (batch_size, total_anchors, 2) tensor, the class probability
@@ -24,7 +24,7 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc=10):
     
     cls = tf.reshape(cls, (-1,2))
     loc = tf.reshape(loc, (-1,4))
-    gt_cls = tf.reshape(gt_clos, (-1,2))
+    gt_cls = tf.reshape(gt_cls, (-1,2))
     gt_loc = tf.reshape(gt_loc, (-1,4))
 
     valid_ind = tf.where(gt_cls >= 0)
@@ -32,16 +32,18 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc=10):
 
     cls = tf.gather(cls, valid_ind)
     gt_cls = tf.gather(gt_cls, valid_ind)
-    loss_cls = tf.nn.sparse_softamx_cross_entropy_with_logits(labels=gt_cls, logits=cls)
+    print(gt_cls.shape, cls.shape)
+    loss_cls = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls)
     loss_cls = loss_cls * total_anchors
+    loss['rpn_cls'] = loss_cls
 
     loc = tf.gather(loc, pos_ind)
     gt_loc = tf.gather(gt_loc, pos_ind)
     loss_loc = smooth_l1_loss(loc - gt_loc)
     loss_loc = loss_loc * batch_size
+    loss['rpn_loc'] = loss_loc
 
-    loss = loss_cls + loss_loc * delta_loc
-    return loss
+    loss['rpn'] = loss_cls + loss_loc * delta_loc
 
 def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask):
     num_classes = cfg.num_classes
@@ -54,8 +56,7 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask):
     loc, gt_loc = tf.reshape(loc, (-1,4)), tf.reshape(gt_loc, (-1,4))
     mask, gt_mask = tf.reshape(mask, (-1,num_classes)), tf.reshape(gt_mask, (-1,num_classes))
 
-    loss_cls = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls)
-    loss_loc = smooth_l1_loss(loc - gt_loc)
-    loss_mask = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_mask, logits=mask)
-    loss = loss_cls + loss_loc + loss_mask
-    return loss
+    loss['cls'] = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls)
+    loss['loc'] = smooth_l1_loss(loc - gt_loc)
+    loss['mask'] = tf.nn.softmax_cross_entropy_with_logits(labels=gt_mask, logits=mask)
+    loss['classifier'] = loss['cls'] + loss['loc'] + loss['mask']

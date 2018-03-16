@@ -51,13 +51,15 @@ def fpn(layers, ratios):
 
     return outputs, outputs[:-1], ratios
 
-def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_masks=None):
+def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None, gt_masks=None):
     '''
     X: NHWC tensor
     gt_boxes: N length of list (num_boxes, 4) coordinates for each image
     gt_classes: N length of list (num_boxes,) label for each image
     gt_masks: N length of list (num_boxes, H, W) binary mask for each iamge
     '''
+    if network_feat_fn is None:
+      network_feat_fn = resnet50
     feats, shrink_ratios, net = network_feat_fn(X, training)
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
@@ -66,7 +68,7 @@ def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_m
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
         proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
-                                                rois, gt_boxes, gt_classes, gt_masks)
+                                                rois['box'], gt_boxes, gt_classes, gt_masks)
     else:
         proposals = refine_rois(rois)
 
@@ -76,10 +78,11 @@ def mask_rcnn(X, network_feat_fn, training, gt_boxes=None, gt_classes=None, gt_m
     mask_logits = mask_classifier(mask_feats, training)
 
     # create loss
-    loss = None
     if training:
-        loss_rpn = compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc)
-        loss_cls = compute_cls_loss(cls_logits, bbox_logits, mask_logits,
-                                    cls_gt_labels, cls_gt_terms, cls_gt_masks)
-        return loss_rpn+loss_cls
+        loss = {}
+        compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc, loss)
+        compute_cls_loss(cls_logits, bbox_logits, mask_logits, cls_gt_labels,
+                         cls_gt_terms, cls_gt_masks, loss)
+        loss['all'] = loss['rpn'] + loss['classifier']
+        return loss, net
     return class_logits, class_probs, bbox_logits, mask_logits
