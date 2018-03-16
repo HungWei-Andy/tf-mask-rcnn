@@ -26,12 +26,9 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
     valid_ind = tf.where(gt_cls >= 0)
     pos_ind = tf.where(gt_cls == 1)
 
-    print(gt_cls.shape, cls.shape)
     cls = tf.gather_nd(cls, valid_ind)
     gt_cls = tf.gather_nd(gt_cls, valid_ind)
-    print(gt_cls, cls)
     loss_cls = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls)
-    print(loss_cls)
     loss_cls = tf.reduce_sum(loss_cls) * total_anchors
     loss['rpn_cls'] = loss_cls
 

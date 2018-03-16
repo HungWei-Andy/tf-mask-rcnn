@@ -5,8 +5,10 @@ class Config(object):
 
 _config = Config()
 _config.DEBUG = False#True
+_config.lr = 0.02
+_config.momentum = 0.9
 _config.num_classes = 80+1
-_config.image_size = 800
+_config.image_size = 224
 _config.min_size = 2
 _config.rpn_nms_thresh = 0.7
 _config.crop_size = 7

@@ -13,8 +13,8 @@ def classifier(X, training):
     proposal_count = cfg.rois_per_img if training else cfg.proposal_count_infer
 
     # feature mixture
-    feat = mixture_conv_bn_relu(X, 1024, crop_size, training)
-    feat = mixture_conv_bn_relu(feat, 2048, 1, training)    
+    feat = mixture_conv_bn_relu(X, 512, crop_size, training)
+    feat = mixture_conv_bn_relu(feat, 512, 1, training)    
 
     # predict
     class_logits = tf.layers.conv2d(feat, num_classes, 1)
