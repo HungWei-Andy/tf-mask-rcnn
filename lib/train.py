@@ -96,9 +96,10 @@ def debug():
               for i in range(cfg.batch_size)]
   feat, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
-  saver = tf.train.Saver(max_to_keep=100)
-
-  with tf.Session() as sess:
+  saver = tf.train.Saver(max_to_keep=100) 
+  config = tf.ConfigProto()
+  config.gpu_options.allow_growth = True
+  with tf.Session(config=config) as sess:
     sess.run(tf.global_variables_initializer())
     net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
 
@@ -114,7 +115,7 @@ def debug():
       for ind, mask_tensor in enumerate(gt_masks):
         feed_dict[mask_tensor] = train_mask[ind]
       _ = sess.run(feat, feed_dict = feed_dict)
-       
+      print(_)
       print('iteration %d completed'%i)
 
 def train():
@@ -149,6 +150,7 @@ def train():
       for ind, mask_tensor in enumerate(gt_masks):
         feed_dict[mask_tensor] = train_mask[ind]
       loss_val, _ = sess.run([loss, opt], feed_dict = feed_dict)
+
 
       if (i+1) % cg.print_every == 0:
         print('iteration: %d, total_loss: %.5f'%(i+1, loss_val['all']))

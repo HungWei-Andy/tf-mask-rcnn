@@ -22,14 +22,14 @@ def bbox_overlaps(boxes, query):
     
     ixmin, ixmax = np.maximum(bxmin, qxmin), np.minimum(bxmax, qxmax)
     iymin, iymax = np.maximum(bymin, qymin), np.minimum(bymax, qymax)
-    intersection = compute_aerea(ixmin, ixmax, iymin, iymax)
+    intersection = compute_area(ixmin, ixmax, iymin, iymax)
 
-    overlap = intersection / union
+    overlap = intersection / (union + 1e-5)
     return overlap
 
 def minmax2ctrwh(boxes):
-    widths = boxes[:,2] - anchors[:,0] + 1
-    heights = boxes[:,3] - anchors[:,1] + 1
+    widths = boxes[:,2] - boxes[:,0] + 1
+    heights = boxes[:,3] - boxes[:,1] + 1
     ctrx = boxes[:,0] + widths * 0.5
     ctry = boxes[:,1] + heights * 0.5
     return widths, heights, ctrx, ctry
@@ -65,22 +65,22 @@ def rpn_target_one_batch(anchors, gt_boxes):
     max_gt_iou = iou[max_gt_ind, range(N)]
 
     # decide labels
-    labels = np.zeros(N)-1
+    labels = np.zeros(N, np.int32)-1
     labels[max_anchor_ind] = 1 # maximum iou with each groundtruth
     labels[max_gt_iou > cfg.rpn_positive_iou] = 1 # iou > postive_thresh
     labels[max_gt_iou < cfg.rpn_negative_iou] = 0 # iou < negative_thresh
 
     # filter out too many positive or negative
-    #pos_inds = np.where(labels == 1)[0]
-    #neg_inds = np.where(labels == 0)[0]
-    #num_pos = int(cfg.rpn_pos_fraction * cfg.rpn_batchsize)
-    #num_neg = cfg.rpn_batchsize - num_pos
-    #if len(pos_inds) > num_pos:
-    #    disabled_ind = np.random.choice(pos_inds, size=num_pos-len(pos_inds), replace=False)
-    #    labels[disabled_ind] = -1
-    #if len(neg_inds) > num_neg:
-    #    disabled_ind = np.random.choice(neg_inds, size=num_neg-len(neg_inds), replace=False)
-    #    labels[disabled_ind] = -1
+    pos_inds = np.where(labels == 1)[0]
+    neg_inds = np.where(labels == 0)[0]
+    num_pos = int(cfg.rpn_pos_ratio * cfg.rpn_batch_size)
+    num_neg = cfg.rpn_batch_size - num_pos
+    if len(pos_inds) > num_pos:
+        disabled_ind = np.random.choice(pos_inds, size=num_pos-len(pos_inds), replace=False)
+        labels[disabled_ind] = -1
+    if len(neg_inds) > num_neg:
+        disabled_ind = np.random.choice(neg_inds, size=num_neg-len(neg_inds), replace=False)
+        labels[disabled_ind] = -1
     
     # decide regression terms 
     terms = np.zeros((N,4), np.float32)-1
@@ -124,9 +124,9 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     iou = bbox_overlaps(rois, gt_boxes)
     max_iou_ind = iou.argmax(axis=1)
     max_iou = iou[range(iou.shape[0]), max_iou_ind]
-    fg_inds = np.where(max_iou>cfg.roi_fg_thresh)[0]
-    bg_inds = np.where((max_iou>=cfg.roi_bg_thresh_low)&(max_iou<cfg.roi_bg_thresh_high))[0]
-
+    fg_inds = np.array(np.where(max_iou>cfg.rois_fg_thresh)).reshape(-1)
+    bg_inds = np.array(np.where((max_iou>=cfg.rois_bg_thresh_low)&(max_iou<=cfg.rois_bg_thresh_high))).reshape(-1)
+    
     if fg_inds.size > 0 and bg_inds.size > 0:
         num_fg = min(num_fg, fg_inds.size)
         fg_inds = np.random.choice(fg_inds, size=num_fg, replace=False)
@@ -138,26 +138,27 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     elif bg_inds.size > 0:    
         bg_inds = np.random.choice(bg_inds, size=num_rois, replace=num_rois>bg_inds.size)
         num_fg, num_bg = 0, num_rois
-
+      
     # rois
     sampled_rois = rois[np.append(fg_inds, bg_inds), :]
     # labels
     fg_gt_inds = max_iou_ind[fg_inds]
-    labels = np.append(gt_classes[fg_gt_inds], np.zeros(num_bg))
+    labels = np.append(gt_classes[fg_gt_inds], np.zeros(num_bg)).astype(np.int32)
     # box
     loc = np.zeros((num_rois, 4), np.float32)
-    box_pred = sampled_rois[:num_fg, :]
-    box_gt = gt_boxes[fg_gt_inds, :]
-    loc[:num_fg, :] = encode_roi(box_pred, box_gt)
-    # intersection
-    intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
+    all_masks = np.zeros((num_fg, gt_masks.shape[1], gt_masks.shape[2], cfg.num_classes), np.float32)
+    intersection = np.zeros((num_fg, 4), np.float32)
+    if num_fg > 0:
+      box_pred = sampled_rois[:num_fg, :].reshape(-1,4)
+      box_gt = gt_boxes[fg_gt_inds, :].reshape(-1,4)
+      loc[:num_fg, :] = encode_roi(box_pred, box_gt)
+      # intersection
+      intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
-    all_masks = np.zeros((len(ft_gt_inds), gt_masks.shape[1],
-                          gt_masks.shape[2], cfg.num_classes), np.float32)
-    for i, fg_ind in enumerate(fg_gt_inds):
+      for i, fg_ind in enumerate(fg_gt_inds):
         all_masks[i, :, :, gt_classes[fg_ind]] = gt_masks[i, :, :]  
 
-    return sampled_rois, labels, loc, intersection, all_masks, num_fg
+    return sampled_rois, labels, loc, intersection, all_masks, np.arange(num_fg, dtype=np.int32)
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     '''
@@ -181,6 +182,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         roi = cand_rois[i,:,:]
         gt_cls = gt_classes[i]
         gt_mask = gt_masks[i]
+        
         sampled_rois, sampled_cls, sampled_loc, inter, all_masks, num_fg = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
             [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
