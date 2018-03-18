@@ -109,13 +109,19 @@ def debug():
       feed_dict = {}
       feed_dict[X] = train_img
       for ind, box_tensor in enumerate(gt_boxes):
-        feed_dict[box_tensor] = train_box[ind]
+        feed_dict[box_tensor] = train_box[ind].reshape(-1, 4)
       for ind, cls_tensor in enumerate(gt_classes):
         feed_dict[cls_tensor] = train_cls[ind]
       for ind, mask_tensor in enumerate(gt_masks):
-        feed_dict[mask_tensor] = train_mask[ind]
+        feed_dict[mask_tensor] = train_mask[ind].reshape(-1, cfg.image_size, cfg.image_size)
       _ = sess.run(feat, feed_dict = feed_dict)
-      print(_)
+      for key in sorted(_.keys()):
+        if isinstance(_[key], list):
+          print(key, len(_[key]))
+          for j in range(len(_[key])):
+            print(_[key][j].shape)
+        elif not isinstance(_[key], tuple):
+          print(key, _[key].shape)
       print('iteration %d completed'%i)
 
 def train():
@@ -153,7 +159,6 @@ def train():
 
 
       if (i+1) % cg.print_every == 0:
-        print('iteration: %d, total_loss: %.5f'%(i+1, loss_val['all']))
         print('rpn loss: %.5f'%loss_val['rpn'])
         print('rpn box loss: %.5f'%loss_val['rpn_loc'])
         print('rpn cls loss: %.5f'%loss_val['rpn_cls'])

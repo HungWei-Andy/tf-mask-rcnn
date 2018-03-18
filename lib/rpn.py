@@ -95,8 +95,6 @@ def decode_roi_np(anchors, loc, cls, img_tensor):
     return anchors, boxes, probs
 
 def decode_roi(anchors, loc, cls, img_tensor):
-    print(anchors.shape)
-    print(loc.shape, cls.shape, img_tensor.shape)
     anchors, boxes, probs = tf.py_func(decode_roi_np, [anchors, loc, cls, img_tensor],
                                        [tf.float32, tf.float32, tf.float32])
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}

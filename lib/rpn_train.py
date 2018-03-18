@@ -7,7 +7,7 @@ def compute_area(xmin, xmax, ymin, ymax):
 
 def bbox_overlaps(boxes, query):
     '''
-    boxes: (N, 4) array
+   boxes: (N, 4) array
     query: (M, 4) array
     RETURN: (N, M) array where ai,j is the distance matrix
     '''
@@ -145,13 +145,13 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     fg_gt_inds = max_iou_ind[fg_inds]
     labels = np.append(gt_classes[fg_gt_inds], np.zeros(num_bg)).astype(np.int32)
     # box
-    loc = np.zeros((num_rois, 4), np.float32)
-    all_masks = np.zeros((num_fg, gt_masks.shape[1], gt_masks.shape[2], cfg.num_classes), np.float32)
+    loc = np.zeros((num_fg, 4), np.float32)
+    all_masks = np.zeros((num_rois, gt_masks.shape[1], gt_masks.shape[2], cfg.num_classes), np.float32)
     intersection = np.zeros((num_fg, 4), np.float32)
     if num_fg > 0:
       box_pred = sampled_rois[:num_fg, :].reshape(-1,4)
       box_gt = gt_boxes[fg_gt_inds, :].reshape(-1,4)
-      loc[:num_fg, :] = encode_roi(box_pred, box_gt)
+      loc = encode_roi(box_pred, box_gt)
       # intersection
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
@@ -187,8 +187,8 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
             [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
         sampled_mask = tf.image.crop_and_resize(all_masks, inter/cfg.image_size,
-                                                tf.range(num_fg),
-                                                [cfg.mask_crop_size*2]*2)
+                                                num_fg,
+                                                [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 
