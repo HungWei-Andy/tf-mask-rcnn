@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from nets.resnet import ResNet50
-from rpn_train import rpn_targets, classifier_targets
+from targets import rpn_targets, classifier_targets
 from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
 from loss import compute_rpn_loss, compute_cls_loss
 from cnn import classifier, mask_classifier
@@ -51,7 +51,9 @@ def fpn(layers, ratios):
 
     return outputs, outputs[:-1], ratios
 
-def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None, gt_masks=None):
+def mask_rcnn(X, training, network_feat_fn=None,
+              gt_boxes=None, gt_classes=None, gt_masks=None,
+              only_rpn=False):
     '''
     X: NHWC tensor
     gt_boxes: N length of list (num_boxes, 4) coordinates for each image
@@ -67,9 +69,9 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
-        proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
+        if not only_rpn:
+            proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
                                                 rois['box'], gt_boxes, gt_classes, gt_masks)
-        #return proposals, net
     else:
         proposals = refine_rois(rois)
 
@@ -87,6 +89,9 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
         #        'cls_gt_labels': cls_gt_labels, 'cls_gt_terms': cls_gt_terms,
         #        'cls_gt_masks': cls_gt_masks, 'mask_feats': mask_feats, 'gt_masks': gt_masks}, net
         compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc, loss)
+        if only_rpn:
+            loss['all'] = loss['rpn']
+        return loss, net
         compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
                          cls_gt_terms, cls_gt_masks, loss)
         loss['all'] = loss['rpn'] + loss['classifier']

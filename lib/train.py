@@ -75,7 +75,9 @@ def extract_batch(data, start_index):
   index = start_index
   imgs, boxes, masks, classes = [], [], [], []
   for cnt in range(cfg.batch_size):
-    ele = data[index]
+    ele = None
+    while ele is None or ele['box'].shape[0] == 0:
+      ele = data[index]
     imgs.append(ele['img'])
     boxes.append(ele['box'])
     masks.append(ele['mask'])
@@ -110,18 +112,21 @@ def debug():
       feed_dict[X] = train_img
       for ind, box_tensor in enumerate(gt_boxes):
         feed_dict[box_tensor] = train_box[ind].reshape(-1, 4)
+        print(train_box[ind].shape)
       for ind, cls_tensor in enumerate(gt_classes):
         feed_dict[cls_tensor] = train_cls[ind]
       for ind, mask_tensor in enumerate(gt_masks):
         feed_dict[mask_tensor] = train_mask[ind].reshape(-1, cfg.image_size, cfg.image_size)
       _ = sess.run(feat, feed_dict = feed_dict)
-      for key in sorted(_.keys()):
-        if isinstance(_[key], list):
-          print(key, len(_[key]))
-          for j in range(len(_[key])):
-            print(_[key][j].shape)
-        elif not isinstance(_[key], tuple):
-          print(key, _[key].shape)
+      #for key in sorted(_.keys()):
+      #  if isinstance(_[key], list):
+      #    print(key, len(_[key]))
+      #    for j in range(len(_[key])):
+      #      print(_[key][j].shape)
+      #  elif not isinstance(_[key], tuple):
+      #    print(key, _[key].shape)
+      #print(_[0].shape, _[1].shape)
+      print(_['rpn_loc'][0], _['rpn_loc'][1].shape, _['rpn_loc'][2].shape)
       print('iteration %d completed'%i)
 
 def train():

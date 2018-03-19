@@ -24,12 +24,12 @@ def bbox_overlaps(boxes, query):
     iymin, iymax = np.maximum(bymin, qymin), np.minimum(bymax, qymax)
     intersection = compute_area(ixmin, ixmax, iymin, iymax)
 
-    overlap = intersection / (union + 1e-5)
+    overlap = intersection / (union + cfg.eps)
     return overlap
 
 def minmax2ctrwh(boxes):
-    widths = boxes[:,2] - boxes[:,0] + 1
-    heights = boxes[:,3] - boxes[:,1] + 1
+    widths = np.maximum(0.0, boxes[:,2] - boxes[:,0] + 1)
+    heights = np.maximum(0.0, boxes[:,3] - boxes[:,1] + 1)
     ctrx = boxes[:,0] + widths * 0.5
     ctry = boxes[:,1] + heights * 0.5
     return widths, heights, ctrx, ctry
@@ -43,10 +43,10 @@ def encode_roi(anchors, boxes):
     '''
     anc_w, anc_h, anc_ctrx, anc_ctry = minmax2ctrwh(anchors)
     box_w, box_h, box_ctrx, box_ctry = minmax2ctrwh(boxes)
-    tx = (box_ctrx - anc_ctrx) / anc_w
-    ty = (box_ctry - anc_ctry) / anc_h
-    tw = np.log(box_w / anc_w)
-    th = np.log(box_h / anc_h)
+    tx = (box_ctrx - anc_ctrx) / (anc_w + cfg.eps)
+    ty = (box_ctry - anc_ctry) / (anc_h + cfg.eps)
+    tw = np.log(box_w / (anc_w + cfg.eps))
+    th = np.log(box_h / (anc_h + cfg.eps))
     return np.stack((tx, ty, tw, th), axis=1)
 
 def rpn_target_one_batch(anchors, gt_boxes):
@@ -60,15 +60,17 @@ def rpn_target_one_batch(anchors, gt_boxes):
     '''
     N, M = anchors.shape[0], gt_boxes.shape[0]
     iou = bbox_overlaps(gt_boxes, anchors)
-    max_anchor_ind = iou.argmax(axis=1)
+    max_iou =  iou.max(axis=1).reshape(-1, 1)
+    max_iou_ind = np.where(max_iou == iou)[1]
+
     max_gt_ind = iou.argmax(axis=0)
     max_gt_iou = iou[max_gt_ind, range(N)]
 
     # decide labels
     labels = np.zeros(N, np.int32)-1
-    labels[max_anchor_ind] = 1 # maximum iou with each groundtruth
-    labels[max_gt_iou > cfg.rpn_positive_iou] = 1 # iou > postive_thresh
     labels[max_gt_iou < cfg.rpn_negative_iou] = 0 # iou < negative_thresh
+    labels[max_gt_iou > cfg.rpn_positive_iou] = 1 # iou > postive_thresh
+    labels[max_iou_ind] = 1 # maximum iou with each groundtruth
 
     # filter out too many positive or negative
     pos_inds = np.where(labels == 1)[0]
@@ -76,17 +78,17 @@ def rpn_target_one_batch(anchors, gt_boxes):
     num_pos = int(cfg.rpn_pos_ratio * cfg.rpn_batch_size)
     num_neg = cfg.rpn_batch_size - num_pos
     if len(pos_inds) > num_pos:
-        disabled_ind = np.random.choice(pos_inds, size=num_pos-len(pos_inds), replace=False)
+        disabled_ind = np.random.choice(pos_inds, size=len(pos_inds)-num_pos, replace=False)
         labels[disabled_ind] = -1
     if len(neg_inds) > num_neg:
-        disabled_ind = np.random.choice(neg_inds, size=num_neg-len(neg_inds), replace=False)
+        disabled_ind = np.random.choice(neg_inds, size=len(neg_inds)-num_neg, replace=False)
         labels[disabled_ind] = -1
     
     # decide regression terms 
     terms = np.zeros((N,4), np.float32)-1
     pos_ind = np.where(labels == 1)[0]
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
-    return labels, terms
+    return labels, terms, max_iou_ind.shape
 
 def rpn_targets(anchors, gt_boxes):
     '''
@@ -99,7 +101,9 @@ def rpn_targets(anchors, gt_boxes):
     '''
     out_labels, out_terms = [], []
     for gt in gt_boxes:
-        labels, terms = tf.py_func(rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
+        labels, terms, label_part = tf.py_func(
+            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32, tf.int64])
+        labels = tf.Print(labels, [label_part])
         out_labels.append(labels)
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)

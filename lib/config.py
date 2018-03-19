@@ -5,6 +5,7 @@ class Config(object):
 
 _config = Config()
 _config.DEBUG = False#True
+_config.eps = 1e-6
 _config.lr = 0.02
 _config.momentum = 0.9
 _config.num_classes = 80+1
@@ -14,7 +15,7 @@ _config.rpn_nms_thresh = 0.7
 _config.crop_size = 7
 _config.mask_crop_size = 14
 _config.crop_channel = 256
-_config.proposal_count_infer = 1000 # 300 for C4, 1000 for FPN
+_config.proposal_count_infer = 1000 # 300 for C4, 512 for FPN
 _config.batch_size = 1 # if batch_size > 1, remember to resize properly when loading image
 _config.rpn_bbox_stddev = np.array([0.1, 0.1, 0.2, 0.2])
 _config.delta_loc = 10
