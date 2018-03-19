@@ -51,9 +51,7 @@ def fpn(layers, ratios):
 
     return outputs, outputs[:-1], ratios
 
-def mask_rcnn(X, training, network_feat_fn=None,
-              gt_boxes=None, gt_classes=None, gt_masks=None,
-              only_rpn=False):
+def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None, gt_masks=None):
     '''
     X: NHWC tensor
     gt_boxes: N length of list (num_boxes, 4) coordinates for each image
@@ -69,8 +67,7 @@ def mask_rcnn(X, training, network_feat_fn=None,
     rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
-        if not only_rpn:
-            proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
+        proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
                                                 rois['box'], gt_boxes, gt_classes, gt_masks)
     else:
         proposals = refine_rois(rois)
@@ -83,15 +80,7 @@ def mask_rcnn(X, training, network_feat_fn=None,
     # create loss
     if training:
         loss = {}
-        #return {'rpn_cls': rpn_cls, 'rpn_loc': rpn_loc, 'rpn_gt_labels': rpn_gt_labels,
-        #        'rpn_gt_terms': rpn_gt_terms, 'class_logits': class_logits,
-        #        'bbox_logits': bbox_logits, 'mask_logits': mask_logits,
-        #        'cls_gt_labels': cls_gt_labels, 'cls_gt_terms': cls_gt_terms,
-        #        'cls_gt_masks': cls_gt_masks, 'mask_feats': mask_feats, 'gt_masks': gt_masks}, net
         compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc, loss)
-        if only_rpn:
-            loss['all'] = loss['rpn']
-        return loss, net
         compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
                          cls_gt_terms, cls_gt_masks, loss)
         loss['all'] = loss['rpn'] + loss['classifier']

@@ -45,8 +45,8 @@ def encode_roi(anchors, boxes):
     box_w, box_h, box_ctrx, box_ctry = minmax2ctrwh(boxes)
     tx = (box_ctrx - anc_ctrx) / (anc_w + cfg.eps)
     ty = (box_ctry - anc_ctry) / (anc_h + cfg.eps)
-    tw = np.log(box_w / (anc_w + cfg.eps))
-    th = np.log(box_h / (anc_h + cfg.eps))
+    tw = np.log(box_w / (anc_w + cfg.eps) + cfg.log_eps)
+    th = np.log(box_h / (anc_h + cfg.eps) + cfg.log_eps)
     return np.stack((tx, ty, tw, th), axis=1)
 
 def rpn_target_one_batch(anchors, gt_boxes):
@@ -55,7 +55,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     - anchors: (N, 4) array
     - gt_boxes: (M, 4) groundtruths boxes
     RETURN
-    p labels: (N,), 1 for positive, 0 for negative, -1 for don't care
+    - labels: (N,), 1 for positive, 0 for negative, -1 for don't care
     - terms: (N, 4), regression terms for each positive anchors
     '''
     N, M = anchors.shape[0], gt_boxes.shape[0]
@@ -88,7 +88,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     terms = np.zeros((N,4), np.float32)-1
     pos_ind = np.where(labels == 1)[0]
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
-    return labels, terms, max_iou_ind.shape
+    return labels, terms
 
 def rpn_targets(anchors, gt_boxes):
     '''
@@ -101,9 +101,8 @@ def rpn_targets(anchors, gt_boxes):
     '''
     out_labels, out_terms = [], []
     for gt in gt_boxes:
-        labels, terms, label_part = tf.py_func(
-            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32, tf.int64])
-        labels = tf.Print(labels, [label_part])
+        labels, terms = tf.py_func(
+            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
         out_labels.append(labels)
         out_terms.append(terms)
     return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)

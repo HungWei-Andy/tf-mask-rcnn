@@ -7,6 +7,7 @@ import tensorflow as tf
 
 import sys
 sys.path.append(join(dirname(__file__), 'cocoapi', 'PythonAPI'))
+sys.stdout = sys.stderr
 
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -126,7 +127,7 @@ def debug():
       #  elif not isinstance(_[key], tuple):
       #    print(key, _[key].shape)
       #print(_[0].shape, _[1].shape)
-      print(_['rpn_loc'][0], _['rpn_loc'][1].shape, _['rpn_loc'][2].shape)
+      print(_)
       print('iteration %d completed'%i)
 
 def train():
@@ -160,20 +161,21 @@ def train():
         feed_dict[cls_tensor] = train_cls[ind]
       for ind, mask_tensor in enumerate(gt_masks):
         feed_dict[mask_tensor] = train_mask[ind]
-      loss_val, _ = sess.run([loss, opt], feed_dict = feed_dict)
 
-
-      if (i+1) % cg.print_every == 0:
-        print('rpn loss: %.5f'%loss_val['rpn'])
+      if (i+1) % cfg.print_every == 0:
+        loss_val, _ = sess.run([loss, opt], feed_dict = feed_dict)
+        print('===== Iterations: %d ====='%(i+1))
+        print('total loss: %.5f'%loss_val['all'])
         print('rpn box loss: %.5f'%loss_val['rpn_loc'])
         print('rpn cls loss: %.5f'%loss_val['rpn_cls'])
-        print('classifier loss: %.5f'%loss_val['classifier'])
         print('classifier box loss: %.5f'%loss_val['loc'])
         print('classifier cls loss: %.5f'%loss_val['cls'])
         print('classifier mask loss: %.5f'%loss_val['mask'])
+      else:
+        sess.run(opt, feed_dict = feed_dict)
       
       if (i+1) % cfg.save_every == 0:
         saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))
 
 if __name__ == '__main__':
-  debug() #train()
+  train() #debug/train

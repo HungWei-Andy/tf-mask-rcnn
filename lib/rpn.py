@@ -42,9 +42,8 @@ def rpn_logits(feats, ratios):
         
         # predict cls, coordinate
         conv_feat = slim.conv2d(feat, 512, 3)
-        loc = slim.conv2d(conv_feat, num_anchors*4, 1,
-                    weights_initializer=tf.truncated_normal_initializer(stddev=0.001),
-                    activation_fn=tf.nn.sigmoid)
+        loc = slim.conv2d(conv_feat, num_anchors*4, 1, activation_fn = None,
+                    weights_initializer=tf.truncated_normal_initializer(stddev=0.001))
         cls = slim.conv2d(conv_feat, num_anchors*2, 1, activation_fn = None,
                     weights_initializer=tf.truncated_normal_initializer(stddev=0.001))
 
@@ -106,6 +105,7 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn, ):
 
     # filter with scores
     _, order = tf.nn.top_k(probs, pre_nms_topn)
+    order = tf.stop_gradient(order)
     boxes = tf.gather(boxes, order)
     probs = tf.gather(probs, order)
 
@@ -145,6 +145,7 @@ def refine_rois(rois):
 
         normalized_box = nonms_box / image_size
         indices = tf.image.non_max_suppression(normalized_box, nonms_probs, proposal_count, nms_thresh)
+        indices = tf.stop_gradient(indices)
         proposals = tf.gather(nonms_box, indices)
         padding = proposal_count-tf.shape(proposals)[0]
         proposals = tf.reshape(tf.pad(proposals, [[0, padding], [0,0]]), [proposal_count, 4])
@@ -161,7 +162,7 @@ def crop_proposals(feats, crop_size, boxes, training):
     h = y2 - y1
 
     # adaptive features in fpn
-    ks = tf.log(tf.sqrt(w*h)/image_size) / tf.log(tf.constant(2.0))
+    ks = tf.log(tf.sqrt(w*h)/(image_size+cfg.eps)+cfg.log_eps) / tf.log(tf.constant(2.0))
     ks = 4 + tf.cast(tf.round(ks), tf.int32)
     ks = tf.minimum(5, tf.maximum(2, ks))
 
@@ -169,19 +170,20 @@ def crop_proposals(feats, crop_size, boxes, training):
     outputs = []
     original_ind = []
     for i, curk in enumerate(range(2, 6)):
-        filtered_ind = tf.where(tf.equal(ks, curk))
+        filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
         cur_boxes = tf.gather_nd(boxes, filtered_ind)
         batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
-        original_ind.append(batch_ind)
-
         cur_boxes = tf.stop_gradient(cur_boxes)
         batch_ind = tf.stop_gradient(batch_ind)
+        feats[i] = tf.stop_gradient(feats[i])
+        original_ind.append(batch_ind)
        
         out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
+        out = tf.stop_gradient(out)
         outputs.append(out)
 
     # encapsulate
-    out = tf.concat(out, axis=0)
+    out = tf.concat(outputs, axis=0)
     original_ind = tf.concat(original_ind, axis=0)
 
     # re-arrange
@@ -189,8 +191,8 @@ def crop_proposals(feats, crop_size, boxes, training):
     ind_total_box = tf.range(num_total_box)
     sort_ind = original_ind * num_total_box + ind_total_box
     ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
+    ind = tf.stop_gradient(ind)
     output = tf.gather(out, ind)
     output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
-    
     return output
 
