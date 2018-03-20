@@ -33,9 +33,9 @@ def mask_classifier(X, training):
     crop_size = cfg.mask_crop_size
     proposal_count = cfg.rois_per_img if training else cf.proposal_count_infer
 
-    feat = mixture_conv_bn_relu(X, 256, 3, training, 'same')
+    feat = mixture_conv_bn_relu(X, 64, 3, training, 'same')
     feat = mixture_conv_bn_relu(feat, 256, 3, training, 'same')
-    feat = mixture_conv_bn_relu(feat, 256, 3, training, 'same')
+    feat = mixture_conv_bn_relu(feat, 64, 3, training, 'same')
     feat = mixture_conv_bn_relu(feat, 256, 3, training, 'same')
     feat = tf.layers.conv2d_transpose(feat, 256, 2, strides=2, padding='same', activation=tf.nn.relu)
     mask = tf.layers.conv2d(feat, num_classes, 1, activation=tf.sigmoid)

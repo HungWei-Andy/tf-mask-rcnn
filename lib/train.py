@@ -47,6 +47,7 @@ class COCOLoader(object):
     offw = (neww-cfg.image_size) // 2
     offw = (offw, neww-cfg.image_size-offw)
     image = util.crop(image, (offh, offw,(0,0)))
+    image = image - cfg.image_mean
     
     # read annotations
     annIds = self.coco.getAnnIds(imgIds=imgInd)

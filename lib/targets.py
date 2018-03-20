@@ -105,7 +105,9 @@ def rpn_targets(anchors, gt_boxes):
             rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
         out_labels.append(labels)
         out_terms.append(terms)
-    return tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
+    out_labels, out_terms = tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
+    out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
+    return out_labels, out_terms
 
 def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     '''
@@ -161,6 +163,7 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
       for i, fg_ind in enumerate(fg_gt_inds):
         all_masks[i, :, :, gt_classes[fg_ind]] = gt_masks[i, :, :]  
 
+    
     return sampled_rois, labels, loc, intersection, all_masks, np.arange(num_fg, dtype=np.int32)
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
@@ -197,4 +200,6 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         loc.append(sampled_loc) 
         mask.append(sampled_mask)
     rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
+    rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
+    loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
     return rois, cls, loc, mask

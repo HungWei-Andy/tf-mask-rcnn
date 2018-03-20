@@ -105,7 +105,6 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn, ):
 
     # filter with scores
     _, order = tf.nn.top_k(probs, pre_nms_topn)
-    order = tf.stop_gradient(order)
     boxes = tf.gather(boxes, order)
     probs = tf.gather(probs, order)
 
@@ -116,7 +115,6 @@ def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn, ):
     keep = tf.logical_and(widths >= min_size, heights >= min_size)
     boxes = tf.boolean_mask(boxes, keep)
     probs = tf.boolean_mask(probs, keep)
-
     return boxes, probs
 
 def refine_rois(rois):
@@ -173,9 +171,8 @@ def crop_proposals(feats, crop_size, boxes, training):
         filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
         cur_boxes = tf.gather_nd(boxes, filtered_ind)
         batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
-        cur_boxes = tf.stop_gradient(cur_boxes)
-        batch_ind = tf.stop_gradient(batch_ind)
-        feats[i] = tf.stop_gradient(feats[i])
+        #feats[i] = tf.stop_gradient(feats[i]) 
+  
         original_ind.append(batch_ind)
        
         out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
@@ -194,5 +191,6 @@ def crop_proposals(feats, crop_size, boxes, training):
     ind = tf.stop_gradient(ind)
     output = tf.gather(out, ind)
     output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
+    output = tf.stop_gradient(output)
     return output
 
