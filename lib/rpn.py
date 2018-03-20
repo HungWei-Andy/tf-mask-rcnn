@@ -162,12 +162,12 @@ def crop_proposals(feats, crop_size, boxes, training):
     # adaptive features in fpn
     ks = tf.log(tf.sqrt(w*h)/(image_size+cfg.eps)+cfg.log_eps) / tf.log(tf.constant(2.0))
     ks = 4 + tf.cast(tf.round(ks), tf.int32)
-    ks = tf.minimum(5, tf.maximum(2, ks))
+    ks = tf.minimum(5, tf.maximum(4, ks))
 
     # crop and resize
     outputs = []
     original_ind = []
-    for i, curk in enumerate(range(2, 6)):
+    for i, curk in enumerate(range(4, 6)):
         filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
         cur_boxes = tf.gather_nd(boxes, filtered_ind)
         batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)

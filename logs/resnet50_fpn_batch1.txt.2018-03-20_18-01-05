@@ -1,0 +1,22 @@
+loading annotations into memory...
+Done (t=9.73s)
+creating index...
+index created!
+Traceback (most recent call last):
+  File "./lib/train.py", line 199, in <module>
+    train() #debug/train
+  File "./lib/train.py", line 144, in train
+    loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+  File "/home/andy/original-mask-rcnn/lib/mask_rcnn.py", line 71, in mask_rcnn
+    rois = tf.Print(rois, [tf.convert_to_tensor('roi decoded')])
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/ops/logging_ops.py", line 64, in Print
+    return gen_logging_ops._print(input_, data, message, first_n, summarize, name)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/ops/gen_logging_ops.py", line 363, in _print
+    summarize=summarize, name=name)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/op_def_library.py", line 513, in _apply_op_helper
+    raise err
+TypeError: Failed to convert object of type <type 'dict'> to Tensor. Contents: {'box': <tf.Tensor 'PyFunc:1' shape=<unknown> dtype=float32>, 'anchor': <tf.Tensor 'PyFunc:0' shape=<unknown> dtype=float32>, 'prob': <tf.Tensor 'PyFunc:2' shape=<unknown> dtype=float32>}. Consider casting elements to a supported type.
+
+real	0m16.560s
+user	0m15.936s
+sys	0m1.136s

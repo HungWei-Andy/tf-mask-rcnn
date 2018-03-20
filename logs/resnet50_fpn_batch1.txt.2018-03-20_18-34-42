@@ -1,0 +1,22 @@
+loading annotations into memory...
+Done (t=9.53s)
+creating index...
+index created!
+Traceback (most recent call last):
+  File "./lib/train.py", line 199, in <module>
+    train() #debug/train
+  File "./lib/train.py", line 144, in train
+    loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+  File "/home/andy/original-mask-rcnn/lib/mask_rcnn.py", line 76, in mask_rcnn
+    rois['box'], gt_boxes, gt_classes, gt_masks)
+  File "/home/andy/original-mask-rcnn/lib/targets.py", line 197, in classifier_targets
+    [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/ops/gen_image_ops.py", line 243, in crop_and_resize
+    extrapolation_value=extrapolation_value, name=name)
+  File "/usr/local/lib/python2.7/dist-packages/tensorflow/python/framework/op_def_library.py", line 533, in _apply_op_helper
+    (prefix, dtypes.as_dtype(input_arg.type).name))
+TypeError: Input 'box_ind' of 'CropAndResize' Op has type int64 that does not match expected type of int32.
+
+real	0m16.302s
+user	0m15.599s
+sys	0m1.196s

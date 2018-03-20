@@ -43,7 +43,9 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     mask, gt_mask = tf.reshape(mask, (-1,num_classes)), tf.reshape(gt_mask, (-1,num_classes))
      
     loss['cls'] = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls))
-    loss['loc'] = tf.cond(tf.size(fg_ind)>0, lambda: tf.losses.huber_loss(loc, gt_loc), lambda: tf.constant(0.0))
+    loss['loc'] = tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc))#tf.cond(tf.size(fg_ind)>0,
+                  #lambda: tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc)),
+                  #lambda: tf.constant(0.0))
     loss['mask'] = tf.cond(tf.size(fg_ind)>0,
                      lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt_mask, logits=mask)),
                      lambda: tf.constant(0.0))

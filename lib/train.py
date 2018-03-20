@@ -131,10 +131,12 @@ def debug():
       print(_)
       print('iteration %d completed'%i)
 
+
 def train():
   image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
   data = COCOLoader(image_dir, shuffle=True)
   
+  # build mask rcnn network
   X = tf.placeholder(tf.float32, shape=(cfg.batch_size,
                                         cfg.image_size, cfg.image_size, 3))
   gt_boxes = [tf.placeholder(tf.float32, shape=(None, 4)) for i in range(cfg.batch_size)]
@@ -143,6 +145,7 @@ def train():
               for i in range(cfg.batch_size)]
   loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
+  # create optimization
   optimizer = tf.train.MomentumOptimizer(cfg.lr, cfg.momentum)
   gvs = optimizer.compute_gradients(loss['all'])
   newgvs = list()
@@ -162,12 +165,20 @@ def train():
   saver = tf.train.Saver(max_to_keep=100)
 
   with tf.Session() as sess:
+    # add summary
+    for key in loss.keys():
+      tf.summary.scalar(key, loss[key])
+    merged_summary = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter(cfg.summary_dir + '/train', sess.graph)
+  
+    # running training 
     sess.run(tf.global_variables_initializer())
     net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
 
     data_index = 0
     for i in range(cfg.iterations):
       train_img, train_box, train_cls, train_mask, data_index = extract_batch(data, data_index)
+      
       feed_dict = {}
       feed_dict[X] = train_img
       for ind, box_tensor in enumerate(gt_boxes):
@@ -178,7 +189,7 @@ def train():
         feed_dict[mask_tensor] = train_mask[ind]
 
       if (i+1) % cfg.print_every == 0:
-        loss_val, _ = sess.run([loss, opt], feed_dict = feed_dict)
+        summary, loss_val, _ = sess.run([merged_summary, loss, opt], feed_dict = feed_dict)
         print('===== Iterations: %d ====='%(i+1))
         print('total loss: %.5f'%loss_val['all'])
         print('rpn box loss: %.5f'%loss_val['rpn_loc'])
@@ -187,7 +198,8 @@ def train():
         print('classifier cls loss: %.5f'%loss_val['cls'])
         print('classifier mask loss: %.5f'%loss_val['mask'])
       else:
-        sess.run(opt, feed_dict = feed_dict)
+        summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
+      train_writer.add_summary(summary, i)
       
       if (i+1) % cfg.save_every == 0:
         saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))

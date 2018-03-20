@@ -1,0 +1,557 @@
+loading annotations into memory...
+Done (t=9.69s)
+creating index...
+index created!
+WARNING:tensorflow:From /home/andy/original-mask-rcnn/lib/loss.py:50: softmax_cross_entropy_with_logits (from tensorflow.python.ops.nn_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+
+Future major versions of TensorFlow will allow gradients to flow
+into the labels input on backprop by default.
+
+See tf.nn.softmax_cross_entropy_with_logits_v2.
+
+(<tf.Tensor 'gradients/conv1/Conv2D_grad/tuple/control_dependency_1:0' shape=(7, 7, 3, 64) dtype=float32>, <tf.Variable 'conv1/kernel:0' shape=(7, 7, 3, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn_conv1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn_conv1/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn_conv1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn_conv1/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2a_branch1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 64, 256) dtype=float32>, <tf.Variable 'res2a_branch1/kernel:0' shape=(1, 1, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2a_branch1/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2a_branch1/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2a_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 64, 64) dtype=float32>, <tf.Variable 'res2a_branch2a/kernel:0' shape=(1, 1, 64, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2a_branch2a/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2a_branch2a/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2a_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 64, 64) dtype=float32>, <tf.Variable 'res2a_branch2b/kernel:0' shape=(3, 3, 64, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2a_branch2b/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2a_branch2b/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2a_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 64, 256) dtype=float32>, <tf.Variable 'res2a_branch2c/kernel:0' shape=(1, 1, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2a_branch2c/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2a_branch2c/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2b_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 64) dtype=float32>, <tf.Variable 'res2b_branch2a/kernel:0' shape=(1, 1, 256, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2b_branch2a/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2b_branch2a/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2b_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 64, 64) dtype=float32>, <tf.Variable 'res2b_branch2b/kernel:0' shape=(3, 3, 64, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2b_branch2b/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2b_branch2b/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2b_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 64, 256) dtype=float32>, <tf.Variable 'res2b_branch2c/kernel:0' shape=(1, 1, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2b_branch2c/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2b_branch2c/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2c_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 64) dtype=float32>, <tf.Variable 'res2c_branch2a/kernel:0' shape=(1, 1, 256, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2c_branch2a/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2c_branch2a/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2c_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 64, 64) dtype=float32>, <tf.Variable 'res2c_branch2b/kernel:0' shape=(3, 3, 64, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2c_branch2b/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'bn2c_branch2b/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res2c_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 64, 256) dtype=float32>, <tf.Variable 'res2c_branch2c/kernel:0' shape=(1, 1, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2c_branch2c/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn2c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn2c_branch2c/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3a_branch1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 512) dtype=float32>, <tf.Variable 'res3a_branch1/kernel:0' shape=(1, 1, 256, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3a_branch1/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3a_branch1/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3a_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 128) dtype=float32>, <tf.Variable 'res3a_branch2a/kernel:0' shape=(1, 1, 256, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3a_branch2a/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3a_branch2a/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3a_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 128, 128) dtype=float32>, <tf.Variable 'res3a_branch2b/kernel:0' shape=(3, 3, 128, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3a_branch2b/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3a_branch2b/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3a_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 128, 512) dtype=float32>, <tf.Variable 'res3a_branch2c/kernel:0' shape=(1, 1, 128, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3a_branch2c/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3a_branch2c/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3b_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 128) dtype=float32>, <tf.Variable 'res3b_branch2a/kernel:0' shape=(1, 1, 512, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3b_branch2a/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3b_branch2a/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3b_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 128, 128) dtype=float32>, <tf.Variable 'res3b_branch2b/kernel:0' shape=(3, 3, 128, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3b_branch2b/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3b_branch2b/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3b_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 128, 512) dtype=float32>, <tf.Variable 'res3b_branch2c/kernel:0' shape=(1, 1, 128, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3b_branch2c/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3b_branch2c/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3c_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 128) dtype=float32>, <tf.Variable 'res3c_branch2a/kernel:0' shape=(1, 1, 512, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3c_branch2a/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3c_branch2a/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3c_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 128, 128) dtype=float32>, <tf.Variable 'res3c_branch2b/kernel:0' shape=(3, 3, 128, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3c_branch2b/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3c_branch2b/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3c_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 128, 512) dtype=float32>, <tf.Variable 'res3c_branch2c/kernel:0' shape=(1, 1, 128, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3c_branch2c/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3c_branch2c/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3d_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 128) dtype=float32>, <tf.Variable 'res3d_branch2a/kernel:0' shape=(1, 1, 512, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3d_branch2a/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3d_branch2a/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3d_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 128, 128) dtype=float32>, <tf.Variable 'res3d_branch2b/kernel:0' shape=(3, 3, 128, 128) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3d_branch2b/gamma:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(128,) dtype=float32>, <tf.Variable 'bn3d_branch2b/beta:0' shape=(128,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res3d_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 128, 512) dtype=float32>, <tf.Variable 'res3d_branch2c/kernel:0' shape=(1, 1, 128, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3d_branch2c/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn3d_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn3d_branch2c/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4a_branch1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 1024) dtype=float32>, <tf.Variable 'res4a_branch1/kernel:0' shape=(1, 1, 512, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4a_branch1/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4a_branch1/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4a_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 256) dtype=float32>, <tf.Variable 'res4a_branch2a/kernel:0' shape=(1, 1, 512, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4a_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4a_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4a_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4a_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4a_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4a_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4a_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4a_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4a_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4a_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4b_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'res4b_branch2a/kernel:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4b_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4b_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4b_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4b_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4b_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4b_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4b_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4b_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4b_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4b_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4c_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'res4c_branch2a/kernel:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4c_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4c_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4c_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4c_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4c_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4c_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4c_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4c_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4c_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4c_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4d_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'res4d_branch2a/kernel:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4d_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4d_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4d_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4d_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4d_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4d_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4d_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4d_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4d_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4d_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4d_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4e_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'res4e_branch2a/kernel:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4e_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4e_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4e_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4e_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4e_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4e_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4e_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4e_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4e_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4e_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4e_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4f_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'res4f_branch2a/kernel:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4f_branch2a/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4f_branch2a/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4f_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 256) dtype=float32>, <tf.Variable 'res4f_branch2b/kernel:0' shape=(3, 3, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4f_branch2b/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'bn4f_branch2b/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res4f_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 1024) dtype=float32>, <tf.Variable 'res4f_branch2c/kernel:0' shape=(1, 1, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4f_branch2c/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn4f_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'bn4f_branch2c/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5a_branch1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 2048) dtype=float32>, <tf.Variable 'res5a_branch1/kernel:0' shape=(1, 1, 1024, 2048) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5a_branch1/gamma:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5a_branch1/beta:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5a_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 512) dtype=float32>, <tf.Variable 'res5a_branch2a/kernel:0' shape=(1, 1, 1024, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5a_branch2a/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5a_branch2a/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5a_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 512, 512) dtype=float32>, <tf.Variable 'res5a_branch2b/kernel:0' shape=(3, 3, 512, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5a_branch2b/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5a_branch2b/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5a_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 2048) dtype=float32>, <tf.Variable 'res5a_branch2c/kernel:0' shape=(1, 1, 512, 2048) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5a_branch2c/gamma:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5a_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5a_branch2c/beta:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5b_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 2048, 512) dtype=float32>, <tf.Variable 'res5b_branch2a/kernel:0' shape=(1, 1, 2048, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5b_branch2a/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5b_branch2a/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5b_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 512, 512) dtype=float32>, <tf.Variable 'res5b_branch2b/kernel:0' shape=(3, 3, 512, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5b_branch2b/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5b_branch2b/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5b_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 2048) dtype=float32>, <tf.Variable 'res5b_branch2c/kernel:0' shape=(1, 1, 512, 2048) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5b_branch2c/gamma:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5b_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5b_branch2c/beta:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5c_branch2a/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 2048, 512) dtype=float32>, <tf.Variable 'res5c_branch2a/kernel:0' shape=(1, 1, 2048, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5c_branch2a/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2a/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5c_branch2a/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5c_branch2b/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 512, 512) dtype=float32>, <tf.Variable 'res5c_branch2b/kernel:0' shape=(3, 3, 512, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5c_branch2b/gamma:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2b/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(512,) dtype=float32>, <tf.Variable 'bn5c_branch2b/beta:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/res5c_branch2c/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 2048) dtype=float32>, <tf.Variable 'res5c_branch2c/kernel:0' shape=(1, 1, 512, 2048) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5c_branch2c/gamma:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/bn5c_branch2c/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(2048,) dtype=float32>, <tf.Variable 'bn5c_branch2c/beta:0' shape=(2048,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 2048, 256) dtype=float32>, <tf.Variable 'Conv/weights:0' shape=(1, 1, 2048, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv/BiasAdd_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'Conv/biases:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 256) dtype=float32>, <tf.Variable 'Conv_1/weights:0' shape=(1, 1, 1024, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_1/BiasAdd_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'Conv_1/biases:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_2/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 512) dtype=float32>, <tf.Variable 'Conv_2/weights:0' shape=(3, 3, 256, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_2/BiasAdd_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'Conv_2/biases:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_3/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 36) dtype=float32>, <tf.Variable 'Conv_3/weights:0' shape=(1, 1, 512, 36) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_3/BiasAdd_grad/tuple/control_dependency_1:0' shape=(36,) dtype=float32>, <tf.Variable 'Conv_3/biases:0' shape=(36,) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_4/weights:0' shape=(1, 1, 512, 18) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_4/biases:0' shape=(18,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_5/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 512) dtype=float32>, <tf.Variable 'Conv_5/weights:0' shape=(3, 3, 256, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_5/BiasAdd_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'Conv_5/biases:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_6/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 36) dtype=float32>, <tf.Variable 'Conv_6/weights:0' shape=(1, 1, 512, 36) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_6/BiasAdd_grad/tuple/control_dependency_1:0' shape=(36,) dtype=float32>, <tf.Variable 'Conv_6/biases:0' shape=(36,) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_7/weights:0' shape=(1, 1, 512, 18) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_7/biases:0' shape=(18,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_8/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 2048, 512) dtype=float32>, <tf.Variable 'Conv_8/weights:0' shape=(3, 3, 2048, 512) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_8/BiasAdd_grad/tuple/control_dependency_1:0' shape=(512,) dtype=float32>, <tf.Variable 'Conv_8/biases:0' shape=(512,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_9/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 512, 36) dtype=float32>, <tf.Variable 'Conv_9/weights:0' shape=(1, 1, 512, 36) dtype=float32_ref>)
+(<tf.Tensor 'gradients/Conv_9/BiasAdd_grad/tuple/control_dependency_1:0' shape=(36,) dtype=float32>, <tf.Variable 'Conv_9/biases:0' shape=(36,) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_10/weights:0' shape=(1, 1, 512, 18) dtype=float32_ref>)
+('Ignore: ', None, <tf.Variable 'Conv_10/biases:0' shape=(18,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d/Conv2D_grad/tuple/control_dependency_1:0' shape=(7, 7, 256, 1024) dtype=float32>, <tf.Variable 'conv2d/kernel:0' shape=(7, 7, 256, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'batch_normalization/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'batch_normalization/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_1/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 1024) dtype=float32>, <tf.Variable 'conv2d_1/kernel:0' shape=(1, 1, 1024, 1024) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_1/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(1024,) dtype=float32>, <tf.Variable 'batch_normalization_1/gamma:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_1/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(1024,) dtype=float32>, <tf.Variable 'batch_normalization_1/beta:0' shape=(1024,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_2/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 81) dtype=float32>, <tf.Variable 'conv2d_2/kernel:0' shape=(1, 1, 1024, 81) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_2/BiasAdd_grad/tuple/control_dependency_1:0' shape=(81,) dtype=float32>, <tf.Variable 'conv2d_2/bias:0' shape=(81,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_3/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 1024, 4) dtype=float32>, <tf.Variable 'conv2d_3/kernel:0' shape=(1, 1, 1024, 4) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_4/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 64) dtype=float32>, <tf.Variable 'conv2d_4/kernel:0' shape=(3, 3, 256, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_2/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'batch_normalization_2/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_2/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'batch_normalization_2/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_5/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 64, 256) dtype=float32>, <tf.Variable 'conv2d_5/kernel:0' shape=(3, 3, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_3/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'batch_normalization_3/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_3/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'batch_normalization_3/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_6/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 256, 64) dtype=float32>, <tf.Variable 'conv2d_6/kernel:0' shape=(3, 3, 256, 64) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_4/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(64,) dtype=float32>, <tf.Variable 'batch_normalization_4/gamma:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_4/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(64,) dtype=float32>, <tf.Variable 'batch_normalization_4/beta:0' shape=(64,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_7/Conv2D_grad/tuple/control_dependency_1:0' shape=(3, 3, 64, 256) dtype=float32>, <tf.Variable 'conv2d_7/kernel:0' shape=(3, 3, 64, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_5/FusedBatchNorm_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'batch_normalization_5/gamma:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/batch_normalization_5/FusedBatchNorm_grad/tuple/control_dependency_2:0' shape=(256,) dtype=float32>, <tf.Variable 'batch_normalization_5/beta:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_transpose/conv2d_transpose_grad/tuple/control_dependency:0' shape=(2, 2, 256, 256) dtype=float32>, <tf.Variable 'conv2d_transpose/kernel:0' shape=(2, 2, 256, 256) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_transpose/BiasAdd_grad/tuple/control_dependency_1:0' shape=(256,) dtype=float32>, <tf.Variable 'conv2d_transpose/bias:0' shape=(256,) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_8/Conv2D_grad/tuple/control_dependency_1:0' shape=(1, 1, 256, 81) dtype=float32>, <tf.Variable 'conv2d_8/kernel:0' shape=(1, 1, 256, 81) dtype=float32_ref>)
+(<tf.Tensor 'gradients/conv2d_8/BiasAdd_grad/tuple/control_dependency_1:0' shape=(81,) dtype=float32>, <tf.Variable 'conv2d_8/bias:0' shape=(81,) dtype=float32_ref>)
+2018-03-20 23:43:51.487806: I tensorflow/core/platform/cpu_feature_guard.cc:140] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-03-20 23:43:51.595145: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:898] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2018-03-20 23:43:51.595539: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1212] Found device 0 with properties: 
+name: GeForce GTX TITAN X major: 5 minor: 2 memoryClockRate(GHz): 1.076
+pciBusID: 0000:01:00.0
+totalMemory: 11.92GiB freeMemory: 11.51GiB
+2018-03-20 23:43:51.595555: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1312] Adding visible gpu devices: 0
+2018-03-20 23:43:51.763793: I tensorflow/core/common_runtime/gpu/gpu_device.cc:993] Creating TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 11147 MB memory) -> physical GPU (device: 0, name: GeForce GTX TITAN X, pci bus id: 0000:01:00.0, compute capability: 5.2)
+/usr/local/lib/python2.7/dist-packages/skimage/transform/_warps.py:84: UserWarning: The default mode, 'constant', will be changed to 'reflect' in skimage 0.15.
+  warn("The default mode, 'constant', will be changed to 'reflect' in "
+===== Iterations: 2 =====
+total loss: 212.24646
+rpn box loss: 20.76392
+rpn cls loss: 0.70217
+classifier box loss: 0.00000
+classifier cls loss: 4.60723
+classifier mask loss: 0.00000
+===== Iterations: 4 =====
+total loss: 279.65619
+rpn box loss: 27.62373
+rpn cls loss: 0.70049
+classifier box loss: 0.00000
+classifier cls loss: 3.41885
+classifier mask loss: 0.00000
+===== Iterations: 6 =====
+total loss: 134.55952
+rpn box loss: 13.18331
+rpn cls loss: 0.70309
+classifier box loss: 0.00000
+classifier cls loss: 2.72639
+classifier mask loss: 0.00000
+===== Iterations: 8 =====
+total loss: 72.86552
+rpn box loss: 7.14577
+rpn cls loss: 0.69364
+classifier box loss: 0.00000
+classifier cls loss: 1.40777
+classifier mask loss: 0.00000
+===== Iterations: 10 =====
+total loss: 147.16885
+rpn box loss: 14.66084
+rpn cls loss: 0.69924
+classifier box loss: 0.00000
+classifier cls loss: 0.56042
+classifier mask loss: 0.00000
+===== Iterations: 12 =====
+total loss: 103.19287
+rpn box loss: 10.30145
+rpn cls loss: 0.69312
+classifier box loss: 0.00000
+classifier cls loss: 0.17841
+classifier mask loss: 0.00000
+===== Iterations: 14 =====
+total loss: 146.39551
+rpn box loss: 14.63332
+rpn cls loss: 0.69599
+classifier box loss: 0.00000
+classifier cls loss: 0.06237
+classifier mask loss: 0.00000
+===== Iterations: 16 =====
+total loss: 158.73576
+rpn box loss: 15.86991
+rpn cls loss: 0.70018
+classifier box loss: 0.00000
+classifier cls loss: 0.03669
+classifier mask loss: 0.00000
+===== Iterations: 18 =====
+total loss: 124.61105
+rpn box loss: 12.45852
+rpn cls loss: 0.69790
+classifier box loss: 0.00000
+classifier cls loss: 0.02589
+classifier mask loss: 0.00000
+===== Iterations: 20 =====
+total loss: 80.94171
+rpn box loss: 8.09329
+rpn cls loss: 0.69427
+classifier box loss: 0.00000
+classifier cls loss: 0.00880
+classifier mask loss: 0.00000
+===== Iterations: 22 =====
+total loss: 161.31956
+rpn box loss: 16.13122
+rpn cls loss: 0.69304
+classifier box loss: 0.00000
+classifier cls loss: 0.00736
+classifier mask loss: 0.00000
+===== Iterations: 24 =====
+total loss: 140.34279
+rpn box loss: 14.02915
+rpn cls loss: 0.70054
+classifier box loss: 0.00000
+classifier cls loss: 0.05128
+classifier mask loss: 0.00000
+===== Iterations: 26 =====
+total loss: 130.93080
+rpn box loss: 13.09231
+rpn cls loss: 0.70348
+classifier box loss: 0.00000
+classifier cls loss: 0.00773
+classifier mask loss: 0.00000
+===== Iterations: 28 =====
+total loss: 122.59196
+rpn box loss: 12.25559
+rpn cls loss: 0.69794
+classifier box loss: 0.00000
+classifier cls loss: 0.03604
+classifier mask loss: 0.00000
+===== Iterations: 30 =====
+total loss: 159.61497
+rpn box loss: 15.96067
+rpn cls loss: 0.69551
+classifier box loss: 0.00000
+classifier cls loss: 0.00825
+classifier mask loss: 0.00000
+===== Iterations: 32 =====
+total loss: 38.06242
+rpn box loss: 3.80507
+rpn cls loss: 0.69355
+classifier box loss: 0.00000
+classifier cls loss: 0.01172
+classifier mask loss: 0.00000
+===== Iterations: 34 =====
+total loss: 212.38733
+rpn box loss: 21.23491
+rpn cls loss: 0.69390
+classifier box loss: 0.00000
+classifier cls loss: 0.03820
+classifier mask loss: 0.00000
+===== Iterations: 36 =====
+total loss: 9.12993
+rpn box loss: 0.91181
+rpn cls loss: 0.69330
+classifier box loss: 0.00000
+classifier cls loss: 0.01185
+classifier mask loss: 0.00000
+===== Iterations: 38 =====
+total loss: 134.95976
+rpn box loss: 13.49304
+rpn cls loss: 0.69143
+classifier box loss: 0.00000
+classifier cls loss: 0.02931
+classifier mask loss: 0.00000
+===== Iterations: 40 =====
+total loss: 86.30257
+rpn box loss: 8.62670
+rpn cls loss: 0.69435
+classifier box loss: 0.00000
+classifier cls loss: 0.03560
+classifier mask loss: 0.00000
+===== Iterations: 42 =====
+total loss: 265.09399
+rpn box loss: 26.50398
+rpn cls loss: 0.69434
+classifier box loss: 0.00000
+classifier cls loss: 0.05421
+classifier mask loss: 0.00000
+===== Iterations: 44 =====
+total loss: 83.48180
+rpn box loss: 8.34655
+rpn cls loss: 0.69723
+classifier box loss: 0.00000
+classifier cls loss: 0.01627
+classifier mask loss: 0.00000
+===== Iterations: 46 =====
+total loss: 139.33282
+rpn box loss: 13.93283
+rpn cls loss: 0.69430
+classifier box loss: 0.00000
+classifier cls loss: 0.00450
+classifier mask loss: 0.00000
+===== Iterations: 48 =====
+total loss: 122.88471
+rpn box loss: 12.28785
+rpn cls loss: 0.69545
+classifier box loss: 0.00000
+classifier cls loss: 0.00617
+classifier mask loss: 0.00000
+===== Iterations: 50 =====
+total loss: 160.82239
+rpn box loss: 16.08180
+rpn cls loss: 0.69784
+classifier box loss: 0.00000
+classifier cls loss: 0.00438
+classifier mask loss: 0.00000
+===== Iterations: 52 =====
+total loss: 33.93834
+rpn box loss: 3.39354
+rpn cls loss: 0.69252
+classifier box loss: 0.00000
+classifier cls loss: 0.00295
+classifier mask loss: 0.00000
+===== Iterations: 54 =====
+total loss: 23.64529
+rpn box loss: 2.36396
+rpn cls loss: 0.69267
+classifier box loss: 0.00000
+classifier cls loss: 0.00574
+classifier mask loss: 0.00000
+===== Iterations: 56 =====
+total loss: 198.02567
+rpn box loss: 19.80193
+rpn cls loss: 0.69279
+classifier box loss: 0.00000
+classifier cls loss: 0.00634
+classifier mask loss: 0.00000
+===== Iterations: 58 =====
+total loss: 257.80051
+rpn box loss: 25.77856
+rpn cls loss: 0.69491
+classifier box loss: 0.00000
+classifier cls loss: 0.01490
+classifier mask loss: 0.00000
+===== Iterations: 60 =====
+total loss: 125.63374
+rpn box loss: 12.56259
+rpn cls loss: 0.69350
+classifier box loss: 0.00000
+classifier cls loss: 0.00787
+classifier mask loss: 0.00000
+===== Iterations: 62 =====
+total loss: 82.75976
+rpn box loss: 8.27522
+rpn cls loss: 0.69753
+classifier box loss: 0.00000
+classifier cls loss: 0.00755
+classifier mask loss: 0.00000
+===== Iterations: 64 =====
+total loss: 121.96245
+rpn box loss: 12.19590
+rpn cls loss: 0.69755
+classifier box loss: 0.00000
+classifier cls loss: 0.00346
+classifier mask loss: 0.00000
+===== Iterations: 66 =====
+total loss: 40.95384
+rpn box loss: 4.09519
+rpn cls loss: 0.69285
+classifier box loss: 0.00000
+classifier cls loss: 0.00189
+classifier mask loss: 0.00000
+===== Iterations: 68 =====
+total loss: 85.23146
+rpn box loss: 8.52287
+rpn cls loss: 0.69595
+classifier box loss: 0.00000
+classifier cls loss: 0.00278
+classifier mask loss: 0.00000
+===== Iterations: 70 =====
+total loss: 144.90042
+rpn box loss: 14.48992
+rpn cls loss: 0.69436
+classifier box loss: 0.00000
+classifier cls loss: 0.00126
+classifier mask loss: 0.00000
+===== Iterations: 72 =====
+total loss: 68.61201
+rpn box loss: 6.86102
+rpn cls loss: 0.69505
+classifier box loss: 0.00000
+classifier cls loss: 0.00185
+classifier mask loss: 0.00000
+===== Iterations: 74 =====
+total loss: 13.93753
+rpn box loss: 1.39348
+rpn cls loss: 0.69287
+classifier box loss: 0.00000
+classifier cls loss: 0.00274
+classifier mask loss: 0.00000
+===== Iterations: 76 =====
+total loss: 11.54502
+rpn box loss: 1.15417
+rpn cls loss: 0.69391
+classifier box loss: 0.00000
+classifier cls loss: 0.00336
+classifier mask loss: 0.00000
+===== Iterations: 78 =====
+total loss: 87.99806
+rpn box loss: 8.79898
+rpn cls loss: 0.69340
+classifier box loss: 0.00000
+classifier cls loss: 0.00821
+classifier mask loss: 0.00000
+===== Iterations: 80 =====
+total loss: 25.47048
+rpn box loss: 2.54590
+rpn cls loss: 0.69576
+classifier box loss: 0.00000
+classifier cls loss: 0.01150
+classifier mask loss: 0.00000
+===== Iterations: 82 =====
+total loss: 200.73035
+rpn box loss: 20.07261
+rpn cls loss: 0.69549
+classifier box loss: 0.00000
+classifier cls loss: 0.00425
+classifier mask loss: 0.00000
+===== Iterations: 84 =====
+total loss: 201.06108
+rpn box loss: 20.10541
+rpn cls loss: 0.69422
+classifier box loss: 0.00000
+classifier cls loss: 0.00697
+classifier mask loss: 0.00000
+===== Iterations: 86 =====
+total loss: 81.33733
+rpn box loss: 8.13327
+rpn cls loss: 0.69370
+classifier box loss: 0.00000
+classifier cls loss: 0.00464
+classifier mask loss: 0.00000
+===== Iterations: 88 =====
+total loss: 142.44237
+rpn box loss: 14.24368
+rpn cls loss: 0.69663
+classifier box loss: 0.00000
+classifier cls loss: 0.00555
+classifier mask loss: 0.00000
+===== Iterations: 90 =====
+total loss: 144.80499
+rpn box loss: 14.48011
+rpn cls loss: 0.69632
+classifier box loss: 0.00000
+classifier cls loss: 0.00385
+classifier mask loss: 0.00000
+===== Iterations: 92 =====
+total loss: 30.03913
+rpn box loss: 3.00351
+rpn cls loss: 0.69205
+classifier box loss: 0.00000
+classifier cls loss: 0.00403
+classifier mask loss: 0.00000
+===== Iterations: 94 =====
+total loss: 180.04395
+rpn box loss: 18.00417
+rpn cls loss: 0.69670
+classifier box loss: 0.00000
+classifier cls loss: 0.00227
+classifier mask loss: 0.00000

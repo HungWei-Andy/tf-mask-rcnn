@@ -13,12 +13,13 @@ def resnet50(X, training):
     net = ResNet50(istrain=training)
     y = net(X)
     output_layers = [
-        net.conv2,
-        net.conv3,
+#        net.conv2,
+#        net.conv3,
         net.conv4,
         net.conv5
     ]
-    shrink_ratios = [2, 3, 4, 5]
+#    shrink_ratios = [2, 3, 4, 5]
+    shrink_ratios = [4, 5]
 
     ############### DEBUG ###############
     if cfg.DEBUG:
@@ -61,14 +62,20 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     if network_feat_fn is None:
       network_feat_fn = resnet50
     feats, shrink_ratios, net = network_feat_fn(X, training)
+    #feats[0] = tf.Print(feats[0], [tf.convert_to_tensor('feature extracted')])
     rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
+    #rpn_feats[0] = tf.Print(rpn_feats[0], [tf.convert_to_tensor('fpn completed')])
     anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
- 
+    #rpn_loc = tf.Print(rpn_loc, [tf.convert_to_tensor('rpn logits complted')]) 
+
     rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
+    #rois['box'] = tf.Print(rois['box'], [tf.convert_to_tensor('roi decoded')])
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
+        #rpn_gt_terms = tf.Print(rpn_gt_terms, [tf.convert_to_tensor('rpn gt completed')])
         proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
                                                 rois['box'], gt_boxes, gt_classes, gt_masks)
+        #proposals = tf.Print(proposals, [tf.convert_to_tensor('targets created')])
     else:
         proposals = refine_rois(rois)
 
@@ -76,6 +83,7 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
     class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
     mask_logits = mask_classifier(mask_feats, training)
+    #class_logits = tf.Print(class_logits, [tf.convert_to_tensor('second stage complted')])
 
     # create loss
     if training:

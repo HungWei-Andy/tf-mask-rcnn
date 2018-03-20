@@ -106,7 +106,7 @@ def rpn_targets(anchors, gt_boxes):
         out_labels.append(labels)
         out_terms.append(terms)
     out_labels, out_terms = tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
-    out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
+    #out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
     return out_labels, out_terms
 
 def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
@@ -127,8 +127,9 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     num_bg = num_rois - num_fg
     
     iou = bbox_overlaps(rois, gt_boxes)
-    max_iou_ind = iou.argmax(axis=1)
-    max_iou = iou[range(iou.shape[0]), max_iou_ind]
+    max_iou =  iou.max(axis=1).reshape(-1, 1)
+    max_iou_ind = np.where(max_iou == iou)[1]
+
     fg_inds = np.array(np.where(max_iou>cfg.rois_fg_thresh)).reshape(-1)
     bg_inds = np.array(np.where((max_iou>=cfg.rois_bg_thresh_low)&(max_iou<=cfg.rois_bg_thresh_high))).reshape(-1)
     
@@ -161,8 +162,7 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
       for i, fg_ind in enumerate(fg_gt_inds):
-        all_masks[i, :, :, gt_classes[fg_ind]] = gt_masks[i, :, :]  
-
+        all_masks[i, :, :, fg_ind] = gt_masks[i, :, :]  
     
     return sampled_rois, labels, loc, intersection, all_masks, np.arange(num_fg, dtype=np.int32)
 
@@ -192,14 +192,16 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         sampled_rois, sampled_cls, sampled_loc, inter, all_masks, num_fg = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
             [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
+        #all_masks = tf.Print(all_masks, [tf.convert_to_tensor('second stage targets completed')])
         sampled_mask = tf.image.crop_and_resize(all_masks, inter/cfg.image_size,
                                                 num_fg,
                                                 [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
+        #sampled_mask = tf.Print(sampled_mask, [tf.convert_to_tensor('mask ground truth completed')])
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 
         mask.append(sampled_mask)
     rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
-    rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
-    loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
+    #rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
+    #loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
     return rois, cls, loc, mask
