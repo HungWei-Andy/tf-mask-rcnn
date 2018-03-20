@@ -144,7 +144,21 @@ def train():
   loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
   optimizer = tf.train.MomentumOptimizer(cfg.lr, cfg.momentum)
-  opt = optimizer.minimize(loss['all'])
+  gvs = optimizer.compute_gradients(loss['all'])
+  newgvs = list()
+  for ind, gv in enumerate(gvs):
+    grad, var = gv
+    if grad is None:
+      print('Ignore: ', grad, var)
+      continue
+    print(grad, var)
+
+    if 'bias' in var.name.lower():
+      grad = grad * 2
+    else:
+      grad = grad + cfg.weight_decay * var
+    newgvs.append((grad, var))
+  opt = optimizer.apply_gradients(gvs)
   saver = tf.train.Saver(max_to_keep=100)
 
   with tf.Session() as sess:

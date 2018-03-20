@@ -4,12 +4,14 @@ class Config(object):
     pass
 
 _config = Config()
+_config.lr = 0.001
+_config.momentum = 0.9
+_config.weight_decay = 0.0001
+
 _config.DEBUG = False#True
 _config.eps = 1e-8
 _config.log_eps = 1e-12
 _config.image_mean = np.array([103.939, 116.779, 123.68]).reshape(1, 1, 3)
-_config.lr = 0.001
-_config.momentum = 0.9
 _config.num_classes = 80+1
 _config.image_size = 672
 _config.min_size = 2
