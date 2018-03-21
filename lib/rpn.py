@@ -4,7 +4,7 @@ import tensorflow.contrib.slim as slim
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
-def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=16):
+def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=32):
     inp_shape = feats.get_shape()
     height, width = inp_shape[1], inp_shape[2]
     num_ratios = len(aspect_ratios)
@@ -139,7 +139,6 @@ def refine_rois(rois):
 
         normalized_box = nonms_box / image_size
         indices = tf.image.non_max_suppression(normalized_box, nonms_probs, proposal_count, nms_thresh)
-        indices = tf.stop_gradient(indices)
         proposals = tf.gather(nonms_box, indices)
         padding = proposal_count-tf.shape(proposals)[0]
         proposals = tf.reshape(tf.pad(proposals, [[0, padding], [0,0]]), [proposal_count, 4])
@@ -169,10 +168,11 @@ def crop_proposals(feats, crop_size, boxes, training):
         outputs = []
         original_ind = []
         for i, curk in enumerate(range(2, 6)):
-            filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
+            filtered_ind = tf.where(tf.equal(ks, curk))
             cur_boxes = tf.gather_nd(boxes, filtered_ind)
             batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
   
+          
             original_ind.append(batch_ind)
        
             out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
@@ -187,7 +187,6 @@ def crop_proposals(feats, crop_size, boxes, training):
         ind_total_box = tf.range(num_total_box)
         sort_ind = original_ind * num_total_box + ind_total_box
         ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
-        ind = tf.stop_gradient(ind)
         output = tf.gather(out, ind)
     output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
     return output

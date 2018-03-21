@@ -57,28 +57,34 @@ class COCOLoader(object):
     anns = [ann for ann in anns if not ann['iscrowd']]
 
     # load image mask, bbox and remove too small masks
-    masks = []
     boxes = []
+    masks = []
     cats = []
     for ann in anns:
       rle = self.coco.annToRLE(ann)
       m = maskUtils.decode(rle)
       if m.max() == 1:
-        m = transform.resize(m, (newh, neww))
-        m = util.crop(m, (offh, offw))
-        masks.append(m)
-        
+        cat = ann['category_id']
+        cats.append(cat)
+
         box = ann['bbox']
         box = [v*scale for v in box]
         box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
         box[2], box[3] = box[0]+box[2], box[1]+box[3]
         boxes.append(box)
-        cats.append(ann['category_id'])
 
-    masks = np.array(masks, np.float32)
+        if not cfg.rpn_only:
+          m = transform.resize(m, (newh, neww))
+          m = util.crop(m, (offh, offw))
+          mask = np.zeros((cfg.image_size, cfg.image_size, cfg.num_classes))
+          mask[:,:,cat] = m
+          masks.append(mask)
+    
     boxes = np.array(boxes, np.float32)
     boxes = np.maximum(0.0, np.minimum(cfg.image_size-1, boxes))
     cats = np.array(cats, np.int32)
+    if not cfg.rpn_only:
+      masks = np.array(masks, np.float32)
 
     #demo_img = image
     #for i in range(boxes.shape[0]):
@@ -138,8 +144,9 @@ def debug():
         feed_dict[box_tensor] = train_box[ind].reshape(-1, 4)
       for ind, cls_tensor in enumerate(gt_classes):
         feed_dict[cls_tensor] = train_cls[ind]
-      for ind, mask_tensor in enumerate(gt_masks):
-        feed_dict[mask_tensor] = train_mask[ind].reshape(-1, cfg.image_size, cfg.image_size)
+      if not cfg.rpn_only:
+        for ind, mask_tensor in enumerate(gt_masks):
+          feed_dict[mask_tensor] = train_mask[ind].reshape(-1, cfg.image_size, cfg.image_size)
       _ = sess.run(feat, feed_dict = feed_dict)
       #for key in sorted(_.keys()):
       #  if isinstance(_[key], list):
@@ -162,7 +169,7 @@ def train(rpn_only=False):
                                         cfg.image_size, cfg.image_size, 3))
   gt_boxes = [tf.placeholder(tf.float32, shape=(None, 4)) for i in range(cfg.batch_size)]
   gt_classes = [tf.placeholder(tf.int32, shape=[None]) for i in range(cfg.batch_size)]
-  gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size))
+  gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size, cfg.num_classes))
               for i in range(cfg.batch_size)]
   loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
@@ -170,8 +177,12 @@ def train(rpn_only=False):
   if rpn_only:
     loss = {'all': loss['rpn'], 'rpn_cls': loss['rpn_cls'], 'rpn_loc': loss['rpn_loc']}
 
+  # learning rate
+  global_step = tf.Variable(0, trainable=False)
+  learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=True)
+
   # create optimization
-  optimizer = tf.train.MomentumOptimizer(cfg.lr, cfg.momentum)
+  optimizer = tf.train.MomentumOptimizer(learning_rate, cfg.momentum)
   gvs = optimizer.compute_gradients(loss['all'])
   newgvs = list()
   for ind, gv in enumerate(gvs):
@@ -186,10 +197,13 @@ def train(rpn_only=False):
     else:
       grad = grad + cfg.weight_decay * var
     newgvs.append((grad, var))
-  opt = optimizer.apply_gradients(gvs)
+  opt = optimizer.apply_gradients(gvs, global_step=global_step)
   saver = tf.train.Saver(max_to_keep=100)
 
-  with tf.Session() as sess:
+  saver = tf.train.Saver(max_to_keep=100) 
+  gpu_config = tf.ConfigProto()
+  gpu_config.gpu_options.allow_growth = True
+  with tf.Session(config=gpu_config) as sess:
     # add summary
     for key in loss.keys():
       tf.summary.scalar(key, loss[key])
@@ -210,8 +224,9 @@ def train(rpn_only=False):
         feed_dict[box_tensor] = train_box[ind]
       for ind, cls_tensor in enumerate(gt_classes):
         feed_dict[cls_tensor] = train_cls[ind]
-      for ind, mask_tensor in enumerate(gt_masks):
-        feed_dict[mask_tensor] = train_mask[ind]
+      if not cfg.rpn_only:
+        for ind, mask_tensor in enumerate(gt_masks):
+          feed_dict[mask_tensor] = train_mask[ind]
 
       if (i+1) % cfg.print_every == 0:
         summary, loss_val, _ = sess.run([merged_summary, loss, opt], feed_dict = feed_dict)
@@ -223,7 +238,7 @@ def train(rpn_only=False):
       train_writer.add_summary(summary, i)
       
       if (i+1) % cfg.save_every == 0:
-        saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))
+        saver.save(sess, join(dirname(__file__), '..', 'output', 'rpn'), global_step=(i+1))
 
 if __name__ == '__main__':
-  train(rpn_only=False) #debug/train
+  train(rpn_only=cfg.rpn_only) #debug/train

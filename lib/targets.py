@@ -90,7 +90,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
     terms = (terms - cfg.bbox_mean.reshape(1,4)) / cfg.bbox_stddev.reshape(1,4)
     terms = terms.astype(np.float32)
-    return labels, terms
+    return labels, terms, pos_inds.size, neg_inds.size
 
 def rpn_targets(anchors, gt_boxes):
     '''
@@ -102,11 +102,16 @@ def rpn_targets(anchors, gt_boxes):
     - out_terms: (M,N,4) encoded target terms tensor for M image, N anchors
     '''
     out_labels, out_terms = [], []
+    num_pos, num_neg = tf.constant(0, tf.int64), tf.constant(0, tf.int64)
     for gt in gt_boxes:
-        labels, terms = tf.py_func(
-            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
+        labels, terms, num_pos_rpn, num_neg_rpn = tf.py_func(
+            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32, tf.int64, tf.int64])
+        num_pos += num_pos_rpn
+        num_neg += num_neg_rpn
         out_labels.append(labels)
         out_terms.append(terms)
+    num_pos = tf.Print(num_pos, [tf.convert_to_tensor('pos rpn'), num_pos])
+    num_neg = tf.Print(num_neg, [tf.convert_to_tensor('neg rpn'), num_neg])
     out_labels, out_terms = tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
     #out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
     return out_labels, out_terms
@@ -129,11 +134,11 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     num_bg = num_rois - num_fg
     
     iou = bbox_overlaps(rois, gt_boxes)
-    max_iou =  iou.max(axis=1).reshape(-1, 1)
-    max_iou_ind = np.where(max_iou == iou)[1]
+    max_iou_ind = iou.argmax(axis=1)
+    max_iou = iou[range(iou.shape[0]), max_iou_ind]
 
-    fg_inds = np.array(np.where(max_iou>cfg.rois_fg_thresh)).reshape(-1)
-    bg_inds = np.array(np.where((max_iou>=cfg.rois_bg_thresh_low)&(max_iou<=cfg.rois_bg_thresh_high))).reshape(-1)
+    fg_inds = np.where(max_iou>cfg.rois_fg_thresh)[0]
+    bg_inds = np.where((max_iou>=cfg.rois_bg_thresh_low)&(max_iou<=cfg.rois_bg_thresh_high))[0]
     
     if fg_inds.size > 0 and bg_inds.size > 0:
         num_fg = min(num_fg, fg_inds.size)
@@ -154,19 +159,16 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
     labels = np.append(gt_classes[fg_gt_inds], np.zeros(num_bg)).astype(np.int32)
     # box
     loc = np.zeros((num_fg, 4), np.float32)
-    all_masks = np.zeros((num_rois, gt_masks.shape[1], gt_masks.shape[2], cfg.num_classes), np.float32)
     intersection = np.zeros((num_fg, 4), np.float32)
     if num_fg > 0:
-      box_pred = sampled_rois[:num_fg, :].reshape(-1,4)
-      box_gt = gt_boxes[fg_gt_inds, :].reshape(-1,4)
+      box_pred = sampled_rois[:num_fg, :]
+      box_gt = gt_boxes[fg_gt_inds, :]
       loc = encode_roi(box_pred, box_gt)
       # intersection
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
-      for i, fg_ind in enumerate(fg_gt_inds):
-        all_masks[i, :, :, fg_ind] = gt_masks[i, :, :]  
     
-    return sampled_rois, labels, loc, intersection, all_masks, np.arange(num_fg, dtype=np.int32)
+    return sampled_rois, labels, loc, intersection, fg_gt_inds
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     '''
@@ -191,12 +193,12 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         gt_cls = gt_classes[i]
         gt_mask = gt_masks[i]
         
-        sampled_rois, sampled_cls, sampled_loc, inter, all_masks, num_fg = tf.py_func(
+        sampled_rois, sampled_cls, sampled_loc, inter, fg_gt_inds = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
-            [tf.float32, tf.int32, tf.float32, tf.float32, tf.float32, tf.int32])
+            [tf.float32, tf.int32, tf.float32, tf.float32, tf.int32])
         #all_masks = tf.Print(all_masks, [tf.convert_to_tensor('second stage targets completed')])
-        sampled_mask = tf.image.crop_and_resize(all_masks, inter/cfg.image_size,
-                                                num_fg,
+        sampled_mask = tf.image.crop_and_resize(gt_mask, inter/cfg.image_size,
+                                                fg_gt_inds,
                                                 [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
         #sampled_mask = tf.Print(sampled_mask, [tf.convert_to_tensor('mask ground truth completed')])
         rois.append(sampled_rois)

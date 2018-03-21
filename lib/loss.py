@@ -14,8 +14,8 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
     return
     - loss: a scalar tensor for rpn loss
     '''
-    valid_ind = tf.stop_gradient(tf.where(tf.greater(gt_cls, -1)))
-    pos_ind = tf.stop_gradient(tf.where(tf.greater(gt_cls, 0)))
+    valid_ind = tf.where(tf.greater(gt_cls, -1))
+    pos_ind = tf.where(tf.greater(gt_cls, 0))
 
     cls = tf.gather_nd(cls, valid_ind)
     gt_cls = tf.gather_nd(gt_cls, valid_ind)
@@ -25,10 +25,10 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
 
     loc = tf.gather_nd(loc, pos_ind)
     gt_loc = tf.gather_nd(gt_loc, pos_ind)
-    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc)) * 4 # product feature dim
+    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc)) * 4# product feature dim
     loss['rpn_loc'] = loss_loc
 
-    loss['rpn'] = loss_cls + loss_loc# * delta_loc
+    loss['rpn'] = loss_cls + loss_loc
 
 def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     num_classes = cfg.num_classes
