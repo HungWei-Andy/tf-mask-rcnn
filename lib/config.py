@@ -24,7 +24,7 @@ else:
 _config.summary_dir = 'logs/summary'
 _config.DEBUG = False#True
 _config.eps = 1e-8
-_config.log_eps = 1e-12
+_config.log_eps = 1e-8
 _config.image_mean = np.array([103.939, 116.779, 123.68]).reshape(1, 1, 3)
 _config.num_classes = 80+1
 _config.image_size = 448

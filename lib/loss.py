@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from config import cfg
 
 
@@ -34,13 +35,22 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     crop_size = cfg.mask_crop_size
     mask_pn = 4*crop_size**2
 
-    fg_ind = tf.stop_gradient(tf.where(gt_cls > 0))
+    # extract fg loc and mask
+    fg_ind = tf.where(gt_cls > 0)
     loc = tf.gather_nd(loc, fg_ind)
     mask = tf.gather_nd(mask, fg_ind)
 
     loc, gt_loc = tf.reshape(loc, (-1,4)), tf.reshape(gt_loc, (-1,4))
-    mask, gt_mask = tf.reshape(mask, (-1,num_classes)), tf.reshape(gt_mask, (-1,num_classes))
-     
+    mask, gt_mask = tf.reshape(mask, (-1,)), tf.reshape(gt_mask, (-1,))
+
+    # add redundant vectors to prevent empty tensor
+    red_loc = tf.convert_to_tensor(np.zeros((1,4), dtype=np.float32))
+    red_mask = tf.convert_to_tensor(np.zeros(1, dtype=np.float32))
+    loc = tf.concat([loc, red_loc], axis=0)
+    gt_loc = tf.concat([gt_loc, red_loc], axis=0)
+    mask = tf.concat([mask, red_mask], axis=0)
+    gt_mask = tf.concat([gt_mask, red_mask], axis=0)
+  
     loss['cls'] = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls))
     loss['loc'] = tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc)) * 4
     loss['mask'] = tf.reduce_mean(-gt_mask * tf.log(mask+cfg.log_eps))
