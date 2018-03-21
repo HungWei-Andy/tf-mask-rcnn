@@ -24,8 +24,7 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
 
     loc = tf.gather_nd(loc, pos_ind)
     gt_loc = tf.gather_nd(gt_loc, pos_ind)
-    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc))
-    #loss_loc = loss_loc * cfg.batch_size
+    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc)) * 4 # product feature dim
     loss['rpn_loc'] = loss_loc
 
     loss['rpn'] = loss_cls + loss_loc# * delta_loc
@@ -43,10 +42,6 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     mask, gt_mask = tf.reshape(mask, (-1,num_classes)), tf.reshape(gt_mask, (-1,num_classes))
      
     loss['cls'] = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls))
-    loss['loc'] = tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc))#tf.cond(tf.size(fg_ind)>0,
-                  #lambda: tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc)),
-                  #lambda: tf.constant(0.0))
-    loss['mask'] = tf.cond(tf.size(fg_ind)>0,
-                     lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=gt_mask, logits=mask)),
-                     lambda: tf.constant(0.0))
+    loss['loc'] = tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc)) * 4
+    loss['mask'] = tf.reduce_mean(-gt_mask * tf.log(mask+cfg.log_eps))
     loss['classifier'] = loss['cls'] + loss['loc'] + loss['mask']

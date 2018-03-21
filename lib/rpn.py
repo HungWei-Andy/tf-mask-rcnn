@@ -56,7 +56,7 @@ def rpn_logits(feats, ratios):
     out_cls = tf.concat(out_cls, axis=1)
     return out_anchors, out_loc, out_cls
 
-def decode_roi_np(anchors, loc, cls):
+def decode_roi(anchors, loc, cls):
     '''
     Inputs
       - anchors: anchor boxes, a tensor of shape [H*W*N_anchor, 4]
@@ -68,8 +68,8 @@ def decode_roi_np(anchors, loc, cls):
                decoded [xmin, ymin, xmax, ymax] for each box
       - probs: probability of object, a tensor of shape [N, H*W*N_anchor]
     '''
-    H, W = cfg.image_size, cfg.image_size
-    anchors = anchors[np.newaxis, :, :]
+    H, W = 1.*cfg.image_size, 1.*cfg.image_size
+    anchors = tf.expand_dims(anchors, 0)
     
     anc_widths = anchors[:,:,2] - anchors[:,:, 0] + 1
     anc_heights = anchors[:,:,3] - anchors[:,:,1] + 1
@@ -79,24 +79,18 @@ def decode_roi_np(anchors, loc, cls):
     loc = loc * cfg.bbox_stddev.reshape(1,1,4) + cfg.bbox_mean.reshape(1,1,4)
     box_ctrx = loc[:,:,0] * anc_widths + anc_ctrx
     box_ctry = loc[:,:,1] * anc_heights + anc_ctry
-    box_w = anc_widths * np.exp(np.minimum(7.0, loc[:,:,2]))
-    box_h = anc_heights * np.exp(np.minimum(7.0, loc[:,:,3]))
+    box_w = anc_widths * tf.exp(tf.minimum(10.0, loc[:,:,2]))
+    box_h = anc_heights * tf.exp(tf.minimum(10.0, loc[:,:,3]))
     
-    box_minx = np.maximum(0.0, box_ctrx - 0.5 * box_w)
-    box_miny = np.maximum(0.0, box_ctry - 0.5 * box_h)
-    box_maxx = np.minimum(W, box_ctrx + 0.5 * box_w - 1)
-    box_maxy = np.minimum(H, box_ctry + 0.5 * box_h - 1)
-    boxes = np.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
+    box_minx = tf.maximum(0.0, box_ctrx - 0.5 * box_w)
+    box_miny = tf.maximum(0.0, box_ctry - 0.5 * box_h)
+    box_maxx = tf.minimum(W, box_ctrx + 0.5 * box_w - 1)
+    box_maxy = tf.minimum(H, box_ctry + 0.5 * box_h - 1)
+    boxes = tf.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
    
-    probs = cls - cls.max(axis=-1)[:, :, np.newaxis]
-    probs /= probs.sum(axis=-1)[:, :, np.newaxis] + cfg.eps
+    probs = tf.nn.softmax(cls)
     probs = probs[:,:,1]
 
-    return anchors, boxes, probs
-
-def decode_roi(anchors, loc, cls):
-    anchors, boxes, probs = tf.py_func(decode_roi_np, [anchors, loc, cls],
-                                       [tf.float32, tf.float32, tf.float32])
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
     return rois
 
@@ -178,12 +172,10 @@ def crop_proposals(feats, crop_size, boxes, training):
             filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
             cur_boxes = tf.gather_nd(boxes, filtered_ind)
             batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
-            feats[i] = tf.stop_gradient(feats[i]) 
   
             original_ind.append(batch_ind)
        
             out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
-            out = tf.stop_gradient(out)
             outputs.append(out)
 
         # encapsulate
@@ -198,6 +190,5 @@ def crop_proposals(feats, crop_size, boxes, training):
         ind = tf.stop_gradient(ind)
         output = tf.gather(out, ind)
     output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
-    output = tf.stop_gradient(output)
     return output
 

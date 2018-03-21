@@ -4,6 +4,8 @@ import random
 from skimage import io, color, util, transform
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import cv2
 
 import sys
 sys.path.append(join(dirname(__file__), 'cocoapi', 'PythonAPI'))
@@ -39,6 +41,7 @@ class COCOLoader(object):
       image = color.gray2rgb(image)
     mins = min(height, width)
     maxs = max(height, width)
+    scale = 1.*cfg.image_size/mins
     newh = cfg.image_size if height == mins else int(1.*height*cfg.image_size/mins)
     neww = cfg.image_size if width == mins else int(1.*width*cfg.image_size/mins)
     image = transform.resize(image, (newh, neww))
@@ -47,8 +50,7 @@ class COCOLoader(object):
     offw = (neww-cfg.image_size) // 2
     offw = (offw, neww-cfg.image_size-offw)
     image = util.crop(image, (offh, offw,(0,0)))
-    image = image - cfg.image_mean
-    
+ 
     # read annotations
     annIds = self.coco.getAnnIds(imgIds=imgInd)
     anns = self.coco.loadAnns(annIds)
@@ -65,11 +67,24 @@ class COCOLoader(object):
         m = transform.resize(m, (newh, neww))
         m = util.crop(m, (offh, offw))
         masks.append(m)
-        boxes.append(ann['bbox'])
+        
+        box = ann['bbox']
+        box = [v*scale for v in box]
+        box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
+        box[2], box[3] = box[0]+box[2], box[1]+box[3]
+        boxes.append(box)
         cats.append(ann['category_id'])
+
     masks = np.array(masks, np.float32)
     boxes = np.array(boxes, np.float32)
+    boxes = np.maximum(0.0, np.minimum(cfg.image_size-1, boxes))
     cats = np.array(cats, np.int32)
+
+    #demo_img = image
+    #for i in range(boxes.shape[0]):
+    #    cv2.rectangle(demo_img, tuple(boxes[i][:2]), tuple(boxes[i][2:]), (0,0,255))
+    #plt.imshow(demo_img)
+    #plt.show()
 
     return {'img': image, 'box': boxes, 'mask': masks, 'class': cats}
 
@@ -92,6 +107,7 @@ def extract_batch(data, start_index):
         num_loaded += 1
 
   imgs = np.stack(imgs, axis=0)
+  imgs -= cfg.image_mean.reshape(1,1,1,3)
   return imgs, boxes, classes, masks, index
 
 def debug():
@@ -210,4 +226,4 @@ def train(rpn_only=False):
         saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))
 
 if __name__ == '__main__':
-  train(rpn_only=True) #debug/train
+  train(rpn_only=False) #debug/train

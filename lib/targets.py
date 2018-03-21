@@ -89,6 +89,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     pos_ind = np.where(labels == 1)[0]
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
     terms = (terms - cfg.bbox_mean.reshape(1,4)) / cfg.bbox_stddev.reshape(1,4)
+    terms = terms.astype(np.float32)
     return labels, terms
 
 def rpn_targets(anchors, gt_boxes):
@@ -204,6 +205,6 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         mask.append(sampled_mask)
     rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
     rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
-    rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
-    loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
+    #rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
+    #loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
     return rois, cls, loc, mask
