@@ -56,7 +56,7 @@ def rpn_logits(feats, ratios):
     out_cls = tf.concat(out_cls, axis=1)
     return out_anchors, out_loc, out_cls
 
-def decode_roi_np(anchors, loc, cls, img_tensor):
+def decode_roi_np(anchors, loc, cls):
     '''
     Inputs
       - anchors: anchor boxes, a tensor of shape [H*W*N_anchor, 4]
@@ -68,7 +68,7 @@ def decode_roi_np(anchors, loc, cls, img_tensor):
                decoded [xmin, ymin, xmax, ymax] for each box
       - probs: probability of object, a tensor of shape [N, H*W*N_anchor]
     '''
-    H, W = img_tensor.shape[1:3]
+    H, W = cfg.image_size, cfg.image_size
     anchors = anchors[np.newaxis, :, :]
     
     anc_widths = anchors[:,:,2] - anchors[:,:, 0] + 1
@@ -76,6 +76,7 @@ def decode_roi_np(anchors, loc, cls, img_tensor):
     anc_ctrx = anchors[:,:,0] + 0.5 * anc_widths
     anc_ctry = anchors[:,:,1] + 0.5 * anc_heights
 
+    loc = loc * cfg.bbox_stddev.reshape(1,1,4) + cfg.bbox_mean.reshape(1,1,4)
     box_ctrx = loc[:,:,0] * anc_widths + anc_ctrx
     box_ctry = loc[:,:,1] * anc_heights + anc_ctry
     box_w = anc_widths * np.exp(np.minimum(7.0, loc[:,:,2]))
@@ -88,18 +89,18 @@ def decode_roi_np(anchors, loc, cls, img_tensor):
     boxes = np.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
    
     probs = cls - cls.max(axis=-1)[:, :, np.newaxis]
-    probs /= probs.sum(axis=-1)[:, :, np.newaxis]
+    probs /= probs.sum(axis=-1)[:, :, np.newaxis] + cfg.eps
     probs = probs[:,:,1]
 
     return anchors, boxes, probs
 
-def decode_roi(anchors, loc, cls, img_tensor):
-    anchors, boxes, probs = tf.py_func(decode_roi_np, [anchors, loc, cls, img_tensor],
+def decode_roi(anchors, loc, cls):
+    anchors, boxes, probs = tf.py_func(decode_roi_np, [anchors, loc, cls],
                                        [tf.float32, tf.float32, tf.float32])
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
     return rois
 
-def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn, ):
+def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
     image_size = cfg.image_size
     min_size = cfg.min_size
 
@@ -123,7 +124,8 @@ def refine_rois(rois):
     nms_thresh = cfg.rpn_nms_thresh
     proposal_count = cfg.proposal_count_infer
     batch_size = 1
-    box_stddev = cfg.rpn_bbox_stddev
+    box_mean = cfg.bbox_mean.reshape(1, 1, 4)
+    box_stddev = cfg.bbox_stddev.reshape(1, 1, 4)
 
     pre_nms_topn = 12000
     post_nms_topn = 2000
@@ -132,7 +134,7 @@ def refine_rois(rois):
         post_nms_topn = 400
 
     boxes, probs = rois['box'], rois['prob']
-    boxes = boxes * box_stddev.reshape(1, 1, 4)
+    boxes = boxes * box_stddev + box_mean
     
     N = boxes.shape[0]
     roi_batch = []
@@ -159,37 +161,42 @@ def crop_proposals(feats, crop_size, boxes, training):
     w = x2 - x1
     h = y2 - y1
 
-    # adaptive features in fpn
-    ks = tf.log(tf.sqrt(w*h)/(image_size+cfg.eps)+cfg.log_eps) / tf.log(tf.constant(2.0))
-    ks = 4 + tf.cast(tf.round(ks), tf.int32)
-    ks = tf.minimum(5, tf.maximum(4, ks))
+    if not cfg.use_fpn:
+        output = tf.image.crop_and_resize(feats[0], tf.reshape(boxes, (-1,4)), 
+                                          tf.range(cfg.batch_size*cfg.rois_per_img)//cfg.rois_per_img,
+                                          [crop_size, crop_size])
+    else:
+        # adaptive features in fpn
+        ks = tf.log(tf.sqrt(w*h)/(image_size+cfg.eps)+cfg.log_eps) / tf.log(tf.constant(2.0))
+        ks = 4 + tf.cast(tf.round(ks), tf.int32)
+        ks = tf.minimum(5, tf.maximum(2, ks))
 
-    # crop and resize
-    outputs = []
-    original_ind = []
-    for i, curk in enumerate(range(4, 6)):
-        filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
-        cur_boxes = tf.gather_nd(boxes, filtered_ind)
-        batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
-        #feats[i] = tf.stop_gradient(feats[i]) 
+        # crop and resize
+        outputs = []
+        original_ind = []
+        for i, curk in enumerate(range(2, 6)):
+            filtered_ind = tf.stop_gradient(tf.where(tf.equal(ks, curk)))
+            cur_boxes = tf.gather_nd(boxes, filtered_ind)
+            batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
+            feats[i] = tf.stop_gradient(feats[i]) 
   
-        original_ind.append(batch_ind)
+            original_ind.append(batch_ind)
        
-        out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
-        out = tf.stop_gradient(out)
-        outputs.append(out)
+            out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
+            out = tf.stop_gradient(out)
+            outputs.append(out)
 
-    # encapsulate
-    out = tf.concat(outputs, axis=0)
-    original_ind = tf.concat(original_ind, axis=0)
+        # encapsulate
+        out = tf.concat(outputs, axis=0)
+        original_ind = tf.concat(original_ind, axis=0)
 
-    # re-arrange
-    num_total_box = tf.shape(original_ind)[0]
-    ind_total_box = tf.range(num_total_box)
-    sort_ind = original_ind * num_total_box + ind_total_box
-    ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
-    ind = tf.stop_gradient(ind)
-    output = tf.gather(out, ind)
+        # re-arrange
+        num_total_box = tf.shape(original_ind)[0]
+        ind_total_box = tf.range(num_total_box)
+        sort_ind = original_ind * num_total_box + ind_total_box
+        ind = tf.nn.top_k(sort_ind, k=num_total_box).indices[::-1]
+        ind = tf.stop_gradient(ind)
+        output = tf.gather(out, ind)
     output = tf.reshape(output, [-1, crop_size, crop_size, crop_channel])
     output = tf.stop_gradient(output)
     return output

@@ -25,10 +25,10 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
     loc = tf.gather_nd(loc, pos_ind)
     gt_loc = tf.gather_nd(gt_loc, pos_ind)
     loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc))
-    loss_loc = loss_loc * cfg.batch_size
+    #loss_loc = loss_loc * cfg.batch_size
     loss['rpn_loc'] = loss_loc
 
-    loss['rpn'] = loss_loc * delta_loc
+    loss['rpn'] = loss_cls + loss_loc# * delta_loc
 
 def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     num_classes = cfg.num_classes

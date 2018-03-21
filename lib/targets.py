@@ -88,6 +88,7 @@ def rpn_target_one_batch(anchors, gt_boxes):
     terms = np.zeros((N,4), np.float32)-1
     pos_ind = np.where(labels == 1)[0]
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
+    terms = (terms - cfg.bbox_mean.reshape(1,4)) / cfg.bbox_stddev.reshape(1,4)
     return labels, terms
 
 def rpn_targets(anchors, gt_boxes):
@@ -176,7 +177,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     - gt_masks: list of len(batch_size) where gt_masks[i] is a (N,H,W) tensor for the
                 mask of each groundtruth instance
     RETURN
-    - rois_ind: (N, proposal_batch_size, 4), sampled proposal bbox
+    - rois: (N, proposal_batch_size, 4), sampled proposal bbox
     - cls: (N, proposal_batch_size), class label of each sampled proposal
     - loc: (N, proposal_batch_size, 4), regression terms of each sampled proposal
     - 
@@ -202,6 +203,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         loc.append(sampled_loc) 
         mask.append(sampled_mask)
     rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
-    #rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
-    #loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
+    rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
+    rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
+    loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
     return rois, cls, loc, mask

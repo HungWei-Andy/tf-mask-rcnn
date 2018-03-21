@@ -75,16 +75,22 @@ class COCOLoader(object):
 
 def extract_batch(data, start_index):
   index = start_index
+  num_loaded = 0
   imgs, boxes, masks, classes = [], [], [], []
-  for cnt in range(cfg.batch_size):
-    ele = None
-    while ele is None or ele['box'].shape[0] == 0:
-      ele = data[index]
-    imgs.append(ele['img'])
-    boxes.append(ele['box'])
-    masks.append(ele['mask'])
-    classes.append(ele['class'])
-    index = (index + 1) % len(data)
+
+  while num_loaded < cfg.batch_size:
+    ele = data[index]
+    index = (index + 1) % len(data) 
+
+    if ele['box'].shape[0] == 0:
+        continue
+    else:
+        imgs.append(ele['img'])
+        boxes.append(ele['box'])
+        masks.append(ele['mask'])
+        classes.append(ele['class'])
+        num_loaded += 1
+
   imgs = np.stack(imgs, axis=0)
   return imgs, boxes, classes, masks, index
 
@@ -114,7 +120,6 @@ def debug():
       feed_dict[X] = train_img
       for ind, box_tensor in enumerate(gt_boxes):
         feed_dict[box_tensor] = train_box[ind].reshape(-1, 4)
-        print(train_box[ind].shape)
       for ind, cls_tensor in enumerate(gt_classes):
         feed_dict[cls_tensor] = train_cls[ind]
       for ind, mask_tensor in enumerate(gt_masks):
@@ -132,7 +137,7 @@ def debug():
       print('iteration %d completed'%i)
 
 
-def train():
+def train(rpn_only=False):
   image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
   data = COCOLoader(image_dir, shuffle=True)
   
@@ -144,6 +149,10 @@ def train():
   gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size))
               for i in range(cfg.batch_size)]
   loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+
+  # renew for training only rpn
+  if rpn_only:
+    loss = {'all': loss['rpn'], 'rpn_cls': loss['rpn_cls'], 'rpn_loc': loss['rpn_loc']}
 
   # create optimization
   optimizer = tf.train.MomentumOptimizer(cfg.lr, cfg.momentum)
@@ -191,12 +200,8 @@ def train():
       if (i+1) % cfg.print_every == 0:
         summary, loss_val, _ = sess.run([merged_summary, loss, opt], feed_dict = feed_dict)
         print('===== Iterations: %d ====='%(i+1))
-        print('total loss: %.5f'%loss_val['all'])
-        print('rpn box loss: %.5f'%loss_val['rpn_loc'])
-        print('rpn cls loss: %.5f'%loss_val['rpn_cls'])
-        print('classifier box loss: %.5f'%loss_val['loc'])
-        print('classifier cls loss: %.5f'%loss_val['cls'])
-        print('classifier mask loss: %.5f'%loss_val['mask'])
+        for key in sorted(loss.keys()):
+          print('%s loss: %.5f'%(key, loss_val[key]))
       else:
         summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
       train_writer.add_summary(summary, i)
@@ -205,4 +210,4 @@ def train():
         saver.save(sess, join(dirname(__file__), '..', 'output'), global_step=(i+1))
 
 if __name__ == '__main__':
-  train() #debug/train
+  train(rpn_only=True) #debug/train

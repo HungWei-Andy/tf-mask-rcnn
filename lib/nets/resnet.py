@@ -57,7 +57,7 @@ class ResNet(Network):
     def _build_resnet(self, numBlock1, numBlock2, numBlock3, numBlock4, build_classifier=False):
         number_name = (self._scope != 'resnet50')
         self.conv1 = conv_bn_relu(self.input, 3, 64, 7, istrain=self.istrain, stride=2, name='conv1')
-        self.pool1 = tf.layers.max_pooling2d(self.conv1, 3, 2, padding='same')
+        self.pool1 = tf.layers.max_pooling2d(self.conv1, 3, 2, padding='same')    
         self.conv2 = residual_block(self.pool1, 64, 64, 256, numBlock1, transition=False,
                                     istrain=self.istrain, number_name=number_name, name='res2') 
         self.conv3 = residual_block(self.conv2, 256, 128, 512, numBlock2,
@@ -66,6 +66,7 @@ class ResNet(Network):
                                     istrain=self.istrain, number_name=number_name, name='res4')
         self.conv5 = residual_block(self.conv4, 1024, 512, 2048, numBlock4,
                                     istrain=self.istrain, number_name=number_name, name='res5')
+ 
         out = self.conv5
 
         if build_classifier:

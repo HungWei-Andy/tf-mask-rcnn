@@ -5,7 +5,7 @@ from nets.resnet import ResNet50
 from targets import rpn_targets, classifier_targets
 from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
 from loss import compute_rpn_loss, compute_cls_loss
-from cnn import classifier, mask_classifier
+from cnn import classifier, mask_classifier, mixture_conv_bn_relu
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
@@ -13,13 +13,12 @@ def resnet50(X, training):
     net = ResNet50(istrain=training)
     y = net(X)
     output_layers = [
-#        net.conv2,
-#        net.conv3,
+        net.conv2,
+        net.conv3,
         net.conv4,
         net.conv5
     ]
-#    shrink_ratios = [2, 3, 4, 5]
-    shrink_ratios = [4, 5]
+    shrink_ratios = [2, 3, 4, 5]
 
     ############### DEBUG ###############
     if cfg.DEBUG:
@@ -60,38 +59,44 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     gt_masks: N length of list (num_boxes, H, W) binary mask for each iamge
     '''
     if network_feat_fn is None:
-      network_feat_fn = resnet50
-    feats, shrink_ratios, net = network_feat_fn(X, training)
-    #feats[0] = tf.Print(feats[0], [tf.convert_to_tensor('feature extracted')])
-    rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
-    #rpn_feats[0] = tf.Print(rpn_feats[0], [tf.convert_to_tensor('fpn completed')])
-    anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
-    #rpn_loc = tf.Print(rpn_loc, [tf.convert_to_tensor('rpn logits complted')]) 
+        network_feat_fn = resnet50
 
-    rois = decode_roi(anchors, rpn_loc, rpn_cls, X)
-    #rois['box'] = tf.Print(rois['box'], [tf.convert_to_tensor('roi decoded')])
+    feats, shrink_ratios, net = network_feat_fn(X, training)
+    if cfg.use_fpn:
+        rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
+    else:
+        rpn_feats, crop_feats, shrink_ratios = [feats[-2]], [feats[-2]], [shrink_ratios[-2]]
+
+    with tf.variable_scope('RPN') as scope:    
+        anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
+
+    rois = decode_roi(anchors, rpn_loc, rpn_cls)
     if training:
         rpn_gt_labels, rpn_gt_terms = rpn_targets(anchors, gt_boxes)
-        #rpn_gt_terms = tf.Print(rpn_gt_terms, [tf.convert_to_tensor('rpn gt completed')])
-        proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
-                                                rois['box'], gt_boxes, gt_classes, gt_masks)
-        #proposals = tf.Print(proposals, [tf.convert_to_tensor('targets created')])
+    #    proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
+    #                                            rois['box'], gt_boxes, gt_classes, gt_masks)
     else:
         proposals = refine_rois(rois)
 
-    cls_feats = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
-    mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
-    class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
-    mask_logits = mask_classifier(mask_feats, training)
-    #class_logits = tf.Print(class_logits, [tf.convert_to_tensor('second stage complted')])
-
+    #print(proposals.get_shape())
+    #with tf.variable_scope('CLS'):
+    #    if cfg.use_fpn:
+    #        cls_feats = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
+    #        mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
+    #    else:
+    #        feat = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
+    #        feat = mixture_conv_bn_relu(feat, 2048, 1, training)
+    #        cls_feats = mask_feats = feat
+    #    class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
+    #    mask_logits = mask_classifier(mask_feats, training)
+ 
     # create loss
     if training:
         loss = {}
         compute_rpn_loss(rpn_cls, rpn_loc, rpn_gt_labels, rpn_gt_terms, cfg.delta_loc, loss)
-        compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
-                         cls_gt_terms, cls_gt_masks, loss)
-        loss['all'] = loss['rpn'] + loss['classifier']
+        #compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
+        #                 cls_gt_terms, cls_gt_masks, loss)
+        #loss['all'] = loss['rpn'] + loss['classifier']
         return loss, net
     return class_logits, class_probs, bbox_logits, mask_logits
 
