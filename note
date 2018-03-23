@@ -4,4 +4,5 @@ A very important observation:
    to occluded objects yet are labeled foreground, the training dataset will include
    contraditory data as true occluded objects labeled as background and cropped foreground
    labeled as foreground. This is a reason for the stuck of loss decreasing.
-
+   
+   "This can be reported on the paper with loss comparison"

@@ -167,7 +167,8 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
       # intersection
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
-    
+   
+    fg_gt_inds = fg_gt_inds.astype(np.int32) 
     return sampled_rois, labels, loc, intersection, fg_gt_inds
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):

@@ -7,7 +7,7 @@ _config = Config()
 _config.lr = 0.001 #init: 0.02 => iter7000: 0.001
 _config.momentum = 0.9
 _config.weight_decay = 0.0001
-_config.decay_step = 5000
+_config.decay_step = 10000
 _config.decay_rate = 0.1
 
 _config.use_fpn = False
@@ -22,7 +22,7 @@ else:
   _config.mask_crop_size = 7
   _config.crop_channel = 2048
 
-_config.rpn_only = True
+_config.rpn_only = False
 if _config.rpn_only:
   _config.batch_size = 16
 else:

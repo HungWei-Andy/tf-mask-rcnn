@@ -3,5 +3,6 @@ COCO/*
 .env/*
 model/*
 output/*
+backup/*
 *.pyc
 *.swp
