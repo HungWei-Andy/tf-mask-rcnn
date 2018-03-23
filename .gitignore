@@ -2,5 +2,6 @@ logs/*
 COCO/*
 .env/*
 model/*
+output/*
 *.pyc
 *.swp

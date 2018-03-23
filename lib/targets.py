@@ -209,4 +209,5 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
     #rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
     #loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
+    print(rois.shape)
     return rois, cls, loc, mask

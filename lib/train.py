@@ -64,14 +64,17 @@ class COCOLoader(object):
       rle = self.coco.annToRLE(ann)
       m = maskUtils.decode(rle)
       if m.max() == 1:
-        cat = ann['category_id']
-        cats.append(cat)
-
         box = ann['bbox']
         box = [v*scale for v in box]
         box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
         box[2], box[3] = box[0]+box[2], box[1]+box[3]
+        if (box[0] < 0 or box[1] < 0 or 
+            box[2] >= cfg.image_size-1 or box[2] >= cfg.image_size-1):
+            continue
         boxes.append(box)
+
+        cat = ann['category_id']
+        cats.append(cat)
 
         if not cfg.rpn_only:
           m = transform.resize(m, (newh, neww))
@@ -179,7 +182,7 @@ def train(rpn_only=False):
 
   # learning rate
   global_step = tf.Variable(0, trainable=False)
-  learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=True)
+  learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=False)
 
   # create optimization
   optimizer = tf.train.MomentumOptimizer(learning_rate, cfg.momentum)
@@ -187,7 +190,7 @@ def train(rpn_only=False):
   newgvs = list()
   for ind, gv in enumerate(gvs):
     grad, var = gv
-    if grad is None:
+    if grad is None or 'conv1' in var.name:
       print('Ignore: ', grad, var)
       continue
     print(grad, var)
@@ -198,7 +201,6 @@ def train(rpn_only=False):
       grad = grad + cfg.weight_decay * var
     newgvs.append((grad, var))
   opt = optimizer.apply_gradients(gvs, global_step=global_step)
-  saver = tf.train.Saver(max_to_keep=100)
 
   saver = tf.train.Saver(max_to_keep=100) 
   gpu_config = tf.ConfigProto()
@@ -214,8 +216,16 @@ def train(rpn_only=False):
     sess.run(tf.global_variables_initializer())
     net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
 
+    # restore
+    start_iter = 0
+    last_train_file = tf.train.latest_checkpoint(join(dirname(__file__), '../output'))
+    if last_train_file is not None:
+        start_iter = int(last_train_file.split('-')[-1])
+        print('restoring %s'%last_train_file)
+        saver.restore(sess, last_train_file)
+
     data_index = 0
-    for i in range(cfg.iterations):
+    for i in range(start_iter, cfg.iterations):
       train_img, train_box, train_cls, train_mask, data_index = extract_batch(data, data_index)
       
       feed_dict = {}

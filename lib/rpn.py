@@ -4,7 +4,12 @@ import tensorflow.contrib.slim as slim
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
+default_anchors = None
 def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=32):
+    global default_anchors
+    if default_anchors is not None:
+        return default_anchors
+
     inp_shape = feats.get_shape()
     height, width = inp_shape[1], inp_shape[2]
     num_ratios = len(aspect_ratios)
@@ -27,6 +32,7 @@ def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=3
               + stride * tf.reshape(tf.range(height), [1,-1,1,1])
               + base_anchors.reshape(1,1,-1,4) )
     anchors = tf.cast(anchors, tf.float32)
+    default_anchors = anchors
     return anchors
 
 def rpn_logits(feats, ratios):

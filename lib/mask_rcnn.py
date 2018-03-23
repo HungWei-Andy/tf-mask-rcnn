@@ -65,7 +65,7 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
     if cfg.use_fpn:
         rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     else:
-        rpn_feats, crop_feats, shrink_ratios = [feats[-2]], [feats[-2]], [shrink_ratios[-2]]
+        rpn_feats, crop_feats, shrink_ratios = [feats[-1]], [feats[-1]], [shrink_ratios[-1]]
 
     with tf.variable_scope('RPN') as scope:    
         anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
@@ -84,7 +84,9 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
             mask_feats = crop_proposals(crop_feats, cfg.mask_crop_size, proposals, training)
         else:
             feat = crop_proposals(crop_feats, cfg.crop_size, proposals, training)
+            print(feat.shape)
             feat = mixture_conv_bn_relu(feat, 2048, 1, training)
+            print(feat.shape)
             cls_feats = mask_feats = feat
         class_logits, class_probs, bbox_logits = classifier(cls_feats, training)
         mask_logits = mask_classifier(mask_feats, training)
