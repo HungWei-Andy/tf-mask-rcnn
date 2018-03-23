@@ -75,7 +75,7 @@ class COCOLoader(object):
             continue
         boxes.append(box)
 
-        cat = self.catId2label(ann['category_id'])
+        cat = self.catId2label[ann['category_id']]
         cats.append(cat)
 
         if not cfg.rpn_only:
