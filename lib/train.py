@@ -24,7 +24,7 @@ class COCOLoader(object):
     self.coco = COCO(join(dirname(__file__), '..', 'COCO', 'annotations', 'instances_train2014.json'))
     self.imgIds = self.coco.getImgIds()
     self.catIds = self.coco.getCatIds()
-    self.catId2label = dict(zip(self.catIds, range(1:len(catIds)+1)))
+    self.catId2label = dict(zip(self.catIds, range(1, len(self.catIds)+1)))
     self.shuffleIds = range(len(self.imgIds))
     if shuffle:
       random.shuffle(self.shuffleIds)
