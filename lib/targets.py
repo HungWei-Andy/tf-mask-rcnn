@@ -7,7 +7,7 @@ def compute_area(xmin, xmax, ymin, ymax):
 
 def bbox_overlaps(boxes, query):
     '''
-   boxes: (N, 4) array
+    boxes: (N, 4) array
     query: (M, 4) array
     RETURN: (N, M) array where ai,j is the distance matrix
     '''
@@ -16,20 +16,20 @@ def bbox_overlaps(boxes, query):
     qxmin, qxmax = np.reshape(query[:,0], [1,-1]), np.reshape(query[:,2], [1,-1])
     qymin, qymax = np.reshape(query[:,1], [1,-1]), np.reshape(query[:,3], [1,-1]) 
 
-    area_boxes = compute_area(bxmin, bxmax, bymin, bymax)
-    area_query = compute_area(qxmin, qxmax, qymin, qymax)
-    union = area_boxes + area_query
-    
     ixmin, ixmax = np.maximum(bxmin, qxmin), np.minimum(bxmax, qxmax)
     iymin, iymax = np.maximum(bymin, qymin), np.minimum(bymax, qymax)
     intersection = compute_area(ixmin, ixmax, iymin, iymax)
 
+    area_boxes = compute_area(bxmin, bxmax, bymin, bymax)
+    area_query = compute_area(qxmin, qxmax, qymin, qymax)
+    union = area_boxes + area_query - intersection
+    
     overlap = intersection / (union + cfg.eps)
     return overlap
 
 def minmax2ctrwh(boxes):
-    widths = np.maximum(0.0, boxes[:,2] - boxes[:,0] + 1)
-    heights = np.maximum(0.0, boxes[:,3] - boxes[:,1] + 1)
+    widths = np.maximum(0.0, boxes[:,2] - boxes[:,0])
+    heights = np.maximum(0.0, boxes[:,3] - boxes[:,1])
     ctrx = boxes[:,0] + widths * 0.5
     ctry = boxes[:,1] + heights * 0.5
     return widths, heights, ctrx, ctry
@@ -60,8 +60,8 @@ def rpn_target_one_batch(anchors, gt_boxes):
     '''
     N, M = anchors.shape[0], gt_boxes.shape[0]
     iou = bbox_overlaps(gt_boxes, anchors)
-    max_iou =  iou.max(axis=1).reshape(-1, 1)
-    max_iou_ind = np.where(max_iou == iou)[1]
+    max_iou_ind =  iou.argmax(axis=1)
+    max_iou = iou[range(M), max_iou_ind]
 
     max_gt_ind = iou.argmax(axis=0)
     max_gt_iou = iou[max_gt_ind, range(N)]
@@ -90,7 +90,8 @@ def rpn_target_one_batch(anchors, gt_boxes):
     terms[pos_ind] = encode_roi(anchors[pos_ind], gt_boxes[max_gt_ind[pos_ind]])
     terms = (terms - cfg.bbox_mean.reshape(1,4)) / cfg.bbox_stddev.reshape(1,4)
     terms = terms.astype(np.float32)
-    return labels, terms, pos_inds.size, neg_inds.size
+    #return labels, terms, (np.where(labels==1)[0]).size, (np.where(labels==0)[0]).size, max_gt_iou, max_iou
+    return labels, terms
 
 def rpn_targets(anchors, gt_boxes):
     '''
@@ -102,18 +103,24 @@ def rpn_targets(anchors, gt_boxes):
     - out_terms: (M,N,4) encoded target terms tensor for M image, N anchors
     '''
     out_labels, out_terms = [], []
-    num_pos, num_neg = tf.constant(0, tf.int64), tf.constant(0, tf.int64)
     for gt in gt_boxes:
-        labels, terms, num_pos_rpn, num_neg_rpn = tf.py_func(
-            rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32, tf.int64, tf.int64])
-        num_pos += num_pos_rpn
-        num_neg += num_neg_rpn
+        #labels, terms, num_pos_rpn, num_neg_rpn, gt_iou, box_iou = tf.py_func(
+        #    rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32, tf.int64, tf.int64, tf.float32, tf.float32])
+
+        labels, terms = tf.py_func(rpn_target_one_batch, [anchors, gt], [tf.int32, tf.float32])
+        #################################### DEBUG ##########################################
+        # num_pos += num_pos_rpn                                                            #
+        # num_neg += num_neg_rpn                                                            #
+        # terms = tf.Print(terms, [tf.convert_to_tensor('max iou'), tf.reduce_max(gt_iou)]) #
+        # terms = tf.Print(terms, [tf.convert_to_tensor('iou'), gt_iou])                    #
+        # terms = tf.Print(terms, [tf.convert_to_tensor('# gt'), tf.size(box_iou)])         #
+        # terms = tf.Print(terms, [tf.convert_to_tensor('pos num'), num_pos_rpn])           #
+        # terms = tf.Print(terms, [tf.convert_to_tensor('neg num'), num_neg_rpn])           #
+        #####################################################################################
         out_labels.append(labels)
         out_terms.append(terms)
-    num_pos = tf.Print(num_pos, [tf.convert_to_tensor('pos rpn'), num_pos])
-    num_neg = tf.Print(num_neg, [tf.convert_to_tensor('neg rpn'), num_neg])
     out_labels, out_terms = tf.stack(out_labels, axis=0), tf.stack(out_terms, axis=0)
-    #out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
+    out_labels, out_terms = tf.stop_gradient(out_labels), tf.stop_gradient(out_terms)
     return out_labels, out_terms
 
 def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
@@ -167,8 +174,7 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
       # intersection
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
-   
-    fg_gt_inds = fg_gt_inds.astype(np.int32) 
+    fg_gt_inds = fg_gt_inds.astype(np.int32)
     return sampled_rois, labels, loc, intersection, fg_gt_inds
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
@@ -208,7 +214,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         mask.append(sampled_mask)
     rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
     rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
-    #rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
-    #loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
+    rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
+    loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
     print(rois.shape)
     return rois, cls, loc, mask

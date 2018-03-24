@@ -4,7 +4,7 @@ class Config(object):
     pass
 
 _config = Config()
-_config.lr = 0.001 #init: 0.02 => iter7000: 0.001
+_config.lr = 0.02 #init: 0.02
 _config.momentum = 0.9
 _config.weight_decay = 0.0001
 _config.decay_step = 10000
@@ -22,7 +22,7 @@ else:
   _config.mask_crop_size = 7
   _config.crop_channel = 2048
 
-_config.rpn_only = False
+_config.rpn_only = False#True
 if _config.rpn_only:
   _config.batch_size = 16
 else:
@@ -34,13 +34,13 @@ _config.eps = 1e-10
 _config.log_eps = 1e-10
 _config.image_mean = np.array([103.939, 116.779, 123.68]).reshape(1, 1, 3)
 _config.num_classes = 80+1
-_config.image_size = 600
+_config.image_size = 448
 _config.min_size = 2
 _config.rpn_nms_thresh = 0.7
 _config.crop_size = 7
 _config.bbox_mean = np.array([0.0, 0.0, 0.0, 0.0])
 _config.bbox_stddev = np.array([1.0, 1.0, 1.0, 1.0])#np.array([0.1, 0.1, 0.2, 0.2])
-_config.delta_loc = 10
+_config.delta_loc = 1
 _config.rois_fg_ratio = 0.25
 _config.fg_per_img = int(_config.rois_per_img*_config.rois_fg_ratio)
 _config.rois_fg_thresh = 0.5

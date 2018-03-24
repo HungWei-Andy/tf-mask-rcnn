@@ -2,8 +2,7 @@ import tensorflow as tf
 import numpy as np
 from config import cfg
 
-
-def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
+def compute_rpn_loss(cls, loc, gt_cls, gt_loc, loss):
     '''
     compute total rpn loss
     - cls: (batch_size, total_anchors, 2) tensor, the class probability
@@ -25,7 +24,7 @@ def compute_rpn_loss(cls, loc, gt_cls, gt_loc, delta_loc, loss):
 
     loc = tf.gather_nd(loc, pos_ind)
     gt_loc = tf.gather_nd(gt_loc, pos_ind)
-    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc))# product feature dim
+    loss_loc = tf.reduce_mean(tf.losses.huber_loss(gt_loc, loc, weights=cfg.delta_loc))# product feature dim
     loss['rpn_loc'] = loss_loc
 
     loss['rpn'] = loss_cls + loss_loc

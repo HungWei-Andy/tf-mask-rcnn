@@ -23,8 +23,6 @@ class COCOLoader(object):
     self.image_dir = image_dir
     self.coco = COCO(join(dirname(__file__), '..', 'COCO', 'annotations', 'instances_train2014.json'))
     self.imgIds = self.coco.getImgIds()
-    self.catIds = self.coco.getCatIds()
-    self.catId2label = dict(zip(self.catIds, range(1, len(self.catIds)+1)))
     self.shuffleIds = range(len(self.imgIds))
     if shuffle:
       random.shuffle(self.shuffleIds)
@@ -66,16 +64,18 @@ class COCOLoader(object):
       rle = self.coco.annToRLE(ann)
       m = maskUtils.decode(rle)
       if m.max() == 1:
+        cat = ann['category_id']
+        if cat < 1 or cat > 80:
+            continue
+
         box = ann['bbox']
         box = [v*scale for v in box]
         box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
         box[2], box[3] = box[0]+box[2], box[1]+box[3]
         if (box[0] < 0 or box[1] < 0 or 
-            box[2] >= cfg.image_size-1 or box[2] >= cfg.image_size-1):
+            box[2] > cfg.image_size-1 or box[2] > cfg.image_size-1):
             continue
         boxes.append(box)
-
-        cat = self.catId2label[ann['category_id']]
         cats.append(cat)
 
         if not cfg.rpn_only:
@@ -86,7 +86,6 @@ class COCOLoader(object):
           masks.append(mask)
     
     boxes = np.array(boxes, np.float32)
-    boxes = np.maximum(0.0, np.minimum(cfg.image_size-1, boxes))
     cats = np.array(cats, np.int32)
     if not cfg.rpn_only:
       masks = np.array(masks, np.float32)
@@ -131,7 +130,7 @@ def debug():
   gt_classes = [tf.placeholder(tf.int32, shape=[None]) for i in range(cfg.batch_size)]
   gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size))
               for i in range(cfg.batch_size)]
-  feat, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+  feat, net, gt_rois = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
   saver = tf.train.Saver(max_to_keep=100) 
   config = tf.ConfigProto()
@@ -184,7 +183,7 @@ def train(rpn_only=False):
 
   # learning rate
   global_step = tf.Variable(0, trainable=False)
-  learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=False)
+  learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=True)
 
   # create optimization
   optimizer = tf.train.MomentumOptimizer(learning_rate, cfg.momentum)
@@ -197,10 +196,10 @@ def train(rpn_only=False):
       continue
     print(grad, var)
 
-    if 'bias' in var.name.lower():
-      grad = grad * 2
-    else:
-      grad = grad + cfg.weight_decay * var
+    #if 'bias' in var.name.lower() or 'beta' in var.name.lower():
+    #  grad = grad * 2
+    #else:
+    #  grad = grad + cfg.weight_decay * var
     newgvs.append((grad, var))
   opt = optimizer.apply_gradients(gvs, global_step=global_step)
 
