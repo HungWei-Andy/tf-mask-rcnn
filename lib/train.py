@@ -240,10 +240,11 @@ def train(rpn_only=False):
           feed_dict[mask_tensor] = train_mask[ind]
 
       if (i+1) % cfg.print_every == 0:
-        summary, loss_val, _ = sess.run([merged_summary, loss, opt], feed_dict = feed_dict)
+        lr, summary, loss_val, _ = sess.run([learning_rate, merged_summary, loss, opt], feed_dict = feed_dict)
         print('===== Iterations: %d ====='%(i+1))
         for key in sorted(loss.keys()):
           print('%s loss: %.5f'%(key, loss_val[key]))
+        print('lr: %.8f'%lr)
       else:
         summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
       train_writer.add_summary(summary, i)

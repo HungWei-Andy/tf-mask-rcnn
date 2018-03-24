@@ -4,7 +4,7 @@ import tensorflow.contrib.slim as slim
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
-def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=16):
+def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=8):
     feat_size = cfg.image_size / stride
     num_ratios = len(aspect_ratios)
     num_scales = len(scales)
@@ -24,8 +24,8 @@ def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=1
     
     anchors = np.zeros((feat_size, feat_size, num_ratios*num_scales, 4), dtype=np.float32)
     anchors += base_anchors.reshape(1,1,-1,4)
-    anchors[:,:,:,[0,2]] += np.arange(feat_size).reshape(-1,1,1,1)
-    anchors[:,:,:,[1,3]] += np.arange(feat_size).reshape(-1,1,1,1)
+    anchors[:,:,:,[0,2]] += np.arange(feat_size).reshape(-1,1,1,1) * stride
+    anchors[:,:,:,[1,3]] += np.arange(feat_size).reshape(-1,1,1,1) * stride
     anchors = np.minimum(cfg.image_size-1, np.maximum(0.0, anchors))
     print('anchors\n', anchors.reshape(-1,4))
     print('base anchors\n', base_anchors)
@@ -177,7 +177,6 @@ def crop_proposals(feats, crop_size, boxes, training):
             cur_boxes = tf.gather_nd(boxes, filtered_ind)
             batch_ind = tf.cast(filtered_ind[:, 0], tf.int32)
   
-          
             original_ind.append(batch_ind)
        
             out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
