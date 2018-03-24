@@ -4,7 +4,7 @@ import tensorflow.contrib.slim as slim
 from config import cfg
 # TODO: argscope for detailed setting in fpn and rpn
 
-def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=8):
+def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=16):
     feat_size = cfg.image_size / stride
     num_ratios = len(aspect_ratios)
     num_scales = len(scales)

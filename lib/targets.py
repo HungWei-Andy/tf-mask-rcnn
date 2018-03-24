@@ -203,11 +203,24 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         sampled_rois, sampled_cls, sampled_loc, inter, fg_gt_inds = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
             [tf.float32, tf.int32, tf.float32, tf.float32, tf.int32])
-        #all_masks = tf.Print(all_masks, [tf.convert_to_tensor('second stage targets completed')])
+
+        ########################################## DEBUG ############################################
+        # all_masks = tf.Print(all_masks, [tf.convert_to_tensor('second stage targets completed')]) #
+        #############################################################################################
+
         sampled_mask = tf.image.crop_and_resize(gt_mask, inter/cfg.image_size,
                                                 fg_gt_inds,
                                                 [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
-        #sampled_mask = tf.Print(sampled_mask, [tf.convert_to_tensor('mask ground truth completed')])
+        
+        # padding
+        num_fg = tf.size(fg_gt_inds)
+        num_bg = cfg.rois_per_img - num_fg
+        sampled_loc = tf.pad(sampled_loc, [[0,num_bg], [0,0]])
+        sampled_mask = tf.pad(sampled_mask, [[0,num_bg], [0,0], [0,0], [0,0]])
+        ############################################# DEBUG ############################################   
+        # sampled_mask = tf.Print(sampled_mask, [tf.convert_to_tensor('mask ground truth completed')]) #
+        ################################################################################################
+
         rois.append(sampled_rois)
         cls.append(sampled_cls)
         loc.append(sampled_loc) 

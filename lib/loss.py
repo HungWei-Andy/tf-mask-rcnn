@@ -37,7 +37,9 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
     # extract fg loc and mask
     fg_ind = tf.where(gt_cls > 0)
     loc = tf.gather_nd(loc, fg_ind)
+    gt_loc = tf.gather_nd(gt_loc, fg_ind)
     mask = tf.gather_nd(mask, fg_ind)
+    gt_mask = tf.gather_nd(gt_mask, fg_ind)
 
     loc, gt_loc = tf.reshape(loc, (-1,4)), tf.reshape(gt_loc, (-1,4))
     mask, gt_mask = tf.reshape(mask, (-1,)), tf.reshape(gt_mask, (-1,))
