@@ -4,10 +4,10 @@ class Config(object):
     pass
 
 _config = Config()
-_config.lr = 0.001 #init: 0.02
+_config.lr = 0.001
 _config.momentum = 0.9
 _config.weight_decay = 0.0001
-_config.decay_step = 8000
+_config.decay_step = 60000
 _config.decay_rate = 0.1
 
 _config.use_fpn = False

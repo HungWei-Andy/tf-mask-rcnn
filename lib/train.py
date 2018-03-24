@@ -250,7 +250,11 @@ def train(rpn_only=False):
       train_writer.add_summary(summary, i)
       
       if (i+1) % cfg.save_every == 0:
-        saver.save(sess, join(dirname(__file__), '..', 'output', 'rpn'), global_step=(i+1))
+        if rpn_only:
+          model_name = 'rpn'
+        else:
+          model_name = 'model'
+        saver.save(sess, join(dirname(__file__), '..', 'output', model_name), global_step=(i+1))
 
 if __name__ == '__main__':
   train(rpn_only=cfg.rpn_only) #debug/train
