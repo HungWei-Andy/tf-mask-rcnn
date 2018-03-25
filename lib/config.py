@@ -10,7 +10,7 @@ _config.weight_decay = 0.0001
 _config.decay_step = 60000
 _config.decay_rate = 0.1
 
-_config.network = 'resnet50'
+_config.network = 'resnet50' # resnet50/mobilenet050
 _config.use_fpn = False
 if _config.use_fpn:
   _config.proposal_count_infer = 1000
