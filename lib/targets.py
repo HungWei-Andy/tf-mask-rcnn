@@ -190,7 +190,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     - rois: (N, proposal_batch_size, 4), sampled proposal bbox
     - cls: (N, proposal_batch_size), class label of each sampled proposal
     - loc: (N, proposal_batch_size, 4), regression terms of each sampled proposal
-    - 
+    - mask: (N, proposal_batch_size, mask_size, mask_size, num_classes), gt masks 
     '''
     batch_size = cfg.batch_size
     rois, cls, loc, mask = list(), list(), list(), list()
@@ -229,5 +229,4 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
     rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
     loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)
-    print(rois.shape)
     return rois, cls, loc, mask
