@@ -1,2 +1,0 @@
-- mismatch of slim resnet50 and original resnet50:
-    https://github.com/tensorflow/models/issues/1418

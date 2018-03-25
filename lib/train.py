@@ -120,50 +120,6 @@ def extract_batch(data, start_index):
   imgs -= cfg.image_mean.reshape(1,1,1,3)
   return imgs, boxes, classes, masks, index
 
-def debug():
-  image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
-  data = COCOLoader(image_dir, shuffle=True)
-  
-  X = tf.placeholder(tf.float32, shape=(cfg.batch_size,
-                                        cfg.image_size, cfg.image_size, 3))
-  gt_boxes = [tf.placeholder(tf.float32, shape=(None, 4)) for i in range(cfg.batch_size)]
-  gt_classes = [tf.placeholder(tf.int32, shape=[None]) for i in range(cfg.batch_size)]
-  gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size))
-              for i in range(cfg.batch_size)]
-  feat, net, gt_rois = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
-
-  saver = tf.train.Saver(max_to_keep=100) 
-  config = tf.ConfigProto()
-  config.gpu_options.allow_growth = True
-  with tf.Session(config=config) as sess:
-    sess.run(tf.global_variables_initializer())
-    net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
-
-    data_index = 0
-    for i in range(cfg.iterations):
-      train_img, train_box, train_cls, train_mask, data_index = extract_batch(data, data_index)
-      feed_dict = {}
-      feed_dict[X] = train_img
-      for ind, box_tensor in enumerate(gt_boxes):
-        feed_dict[box_tensor] = train_box[ind].reshape(-1, 4)
-      for ind, cls_tensor in enumerate(gt_classes):
-        feed_dict[cls_tensor] = train_cls[ind]
-      if not cfg.rpn_only:
-        for ind, mask_tensor in enumerate(gt_masks):
-          feed_dict[mask_tensor] = train_mask[ind].reshape(-1, cfg.image_size, cfg.image_size)
-      _ = sess.run(feat, feed_dict = feed_dict)
-      #for key in sorted(_.keys()):
-      #  if isinstance(_[key], list):
-      #    print(key, len(_[key]))
-      #    for j in range(len(_[key])):
-      #      print(_[key][j].shape)
-      #  elif not isinstance(_[key], tuple):
-      #    print(key, _[key].shape)
-      #print(_[0].shape, _[1].shape)
-      print(_)
-      print('iteration %d completed'%i)
-
-
 def train(rpn_only=False):
   image_dir = join(dirname(__file__), '..', 'COCO', 'images', 'train2014')
   data = COCOLoader(image_dir, shuffle=True)
@@ -208,10 +164,10 @@ def train(rpn_only=False):
   gpu_config.gpu_options.allow_growth = True
   with tf.Session(config=gpu_config) as sess:
     # add summary
-    for key in loss.keys():
-      tf.summary.scalar(key, loss[key])
-    merged_summary = tf.summary.merge_all()
-    train_writer = tf.summary.FileWriter(cfg.summary_dir + '/train', sess.graph)
+    #for key in loss.keys():
+    #  tf.summary.scalar(key, loss[key])
+    #merged_summary = tf.summary.merge_all()
+    #train_writer = tf.summary.FileWriter(cfg.summary_dir + '/train', sess.graph)
   
     # running training 
     sess.run(tf.global_variables_initializer())
@@ -240,14 +196,16 @@ def train(rpn_only=False):
           feed_dict[mask_tensor] = train_mask[ind]
 
       if (i+1) % cfg.print_every == 0:
-        lr, summary, loss_val, _ = sess.run([learning_rate, merged_summary, loss, opt], feed_dict = feed_dict)
+        #lr, summary, loss_val, _ = sess.run([learning_rate, merged_summary, loss, opt], feed_dict = feed_dict)
+        lr, loss_val, _ = sess.run([learning_rate, loss, opt], feed_dict=feed_dict)
         print('===== Iterations: %d ====='%(i+1))
         for key in sorted(loss.keys()):
           print('%s loss: %.5f'%(key, loss_val[key]))
         print('lr: %.8f'%lr)
       else:
-        summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
-      train_writer.add_summary(summary, i)
+        _ = sess.run(opt, feed_dict=feed_dict)
+        #summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
+      #train_writer.add_summary(summary, i)
       
       if (i+1) % cfg.save_every == 0:
         if rpn_only:

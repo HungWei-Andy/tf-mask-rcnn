@@ -54,5 +54,5 @@ def compute_cls_loss(cls, loc, mask, gt_cls, gt_loc, gt_mask, loss):
   
     loss['cls'] = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=gt_cls, logits=cls))
     loss['loc'] = tf.reduce_mean(tf.losses.huber_loss(loc, gt_loc))
-    loss['mask'] = tf.reduce_mean(-gt_mask * tf.log(mask+cfg.log_eps)) / cfg.num_classes
+    loss['mask'] = tf.reduce_sum(-gt_mask * tf.log(mask+cfg.log_eps)) / (cfg.batch_size*cfg.mask_crop_size**2)
     loss['classifier'] = loss['cls'] + loss['loc'] + loss['mask']
