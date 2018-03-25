@@ -4,5 +4,6 @@ COCO/*
 model/*
 output/*
 backup/*
+note
 *.pyc
 *.swp

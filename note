@@ -1,8 +1,0 @@
-A very important observation:
-1. After center-croping the groundtruth image, remember to "DROP" the out-of-boundary
-   bounding boxes. Otherwise, since the cropped bounding-boxes have appearances similiar
-   to occluded objects yet are labeled foreground, the training dataset will include
-   contraditory data as true occluded objects labeled as background and cropped foreground
-   labeled as foreground. This is a reason for the stuck of loss decreasing.
-   
-   "This can be reported on the paper with loss comparison"
