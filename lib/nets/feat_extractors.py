@@ -13,7 +13,7 @@ class FeatExtractor(object):
 class resnet50(FeatExtractor):
     def __call__(self, X, training):
         self.net = ResNet50(istrain=training)
-        y = net(X)
+        y = self.net(X)
         output_layers = [
             net.conv2,
             net.conv3,
