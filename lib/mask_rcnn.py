@@ -1,37 +1,12 @@
 import numpy as np
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-from nets.resnet import ResNet50
 from targets import rpn_targets, classifier_targets
 from rpn import rpn_logits, decode_roi, refine_rois, crop_proposals
 from loss import compute_rpn_loss, compute_cls_loss
 from cnn import classifier, mask_classifier, mixture_conv_bn_relu
 from config import cfg
-# TODO: argscope for detailed setting in fpn and rpn
-
-def resnet50(X, training):
-    net = ResNet50(istrain=training)
-    y = net(X)
-    output_layers = [
-        net.conv2,
-        net.conv3,
-        net.conv4,
-        net.conv5
-    ]
-    shrink_ratios = [2, 3, 4, 5]
-
-    ############### DEBUG ###############
-    if cfg.DEBUG:
-        pass
-        #for var in tf.global_variables():
-        #    print(var.name, var.get_shape().as_list())
-        #for layer in output_layers:
-        #    print('resnet layer shape: {}', layer.get_shape().as_list())
-        #for key in layers.keys():
-        #    var = layers[key]
-        #    print(key, var, var.shape)
-    #####################################
-    return output_layers, shrink_ratios, net
+from nets.feat_extractors import feat_extractor_maker
 
 def fpn(layers, ratios):
     crop_channel = cfg.crop_channel
@@ -51,17 +26,15 @@ def fpn(layers, ratios):
 
     return outputs, outputs[:-1], ratios
 
-def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None, gt_masks=None):
+def mask_rcnn(X, training, network, gt_boxes=None, gt_classes=None, gt_masks=None):
     '''
     X: NHWC tensor
     gt_boxes: N length of list (num_boxes, 4) coordinates for each image
     gt_classes: N length of list (num_boxes,) label for each image
     gt_masks: N length of list (num_boxes, H, W) binary mask for each iamge
     '''
-    if network_feat_fn is None:
-        network_feat_fn = resnet50
-
-    feats, shrink_ratios, net = network_feat_fn(X, training)
+    feat_extractor = feat_extractor_maker(network)
+    feats, shrink_ratios = feat_extractor(X, training)
     if cfg.use_fpn:
         rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     else:
@@ -96,6 +69,6 @@ def mask_rcnn(X, training, network_feat_fn=None, gt_boxes=None, gt_classes=None,
         compute_cls_loss(class_logits, bbox_logits, mask_logits, cls_gt_labels,
                          cls_gt_terms, cls_gt_masks, loss)
         loss['all'] = loss['rpn'] + loss['classifier']
-        return loss, net
+        return loss, feat_extractor
     return class_logits, class_probs, bbox_logits, mask_logits
 

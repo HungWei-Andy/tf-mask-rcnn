@@ -131,7 +131,7 @@ def train(rpn_only=False):
   gt_classes = [tf.placeholder(tf.int32, shape=[None]) for i in range(cfg.batch_size)]
   gt_masks = [tf.placeholder(tf.float32, shape=(None, cfg.image_size, cfg.image_size, cfg.num_classes))
               for i in range(cfg.batch_size)]
-  loss, net = mask_rcnn(X, True, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
+  loss, net = mask_rcnn(X, True, cfg.network, gt_boxes=gt_boxes, gt_classes=gt_classes, gt_masks=gt_masks)
 
   # renew for training only rpn
   if rpn_only:

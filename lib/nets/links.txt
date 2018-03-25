@@ -1,0 +1,4 @@
+1. MobileNet v1 (official): https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet_v1.md
+2. MobileNet v2 (official): https://github.com/tensorflow/models/tree/master/research/slim/nets/mobilenet 
+3. ResNet: https://github.com/KaimingHe/deep-residual-networks#models (caffe-models)
+           https://github.com/ethereon/caffe-tensorflow (caffe model to tensorflow convertor)
