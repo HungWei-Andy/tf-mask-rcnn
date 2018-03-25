@@ -15,10 +15,10 @@ class resnet50(FeatExtractor):
         self.net = ResNet50(istrain=training)
         y = self.net(X)
         output_layers = [
-            net.conv2,
-            net.conv3,
-            net.conv4,
-            net.conv5
+            self.net.conv2,
+            self.net.conv3,
+            self.net.conv4,
+            self.net.conv5
         ]
         shrink_ratios = [2, 3, 4, 5]
         return output_layers, shrink_ratios 
