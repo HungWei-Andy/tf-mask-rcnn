@@ -2,7 +2,8 @@ logs/*
 COCO/*
 .env/*
 model/*
-output/*
+
+output*/*
 backup/*
 note
 *.pyc

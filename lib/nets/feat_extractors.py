@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 from resnet import ResNet50
 from mobilenet_v1 import mobilenet_v1_050
-from mobilenet
 
 class FeatExtractor(object):
     def __call__(self, X, training):
