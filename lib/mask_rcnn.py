@@ -9,7 +9,7 @@ from config import cfg
 from nets.feat_extractors import feat_extractor_maker
 
 def fpn(layers, ratios):
-    crop_channel = cfg.crop_channel
+    crop_channel = layers[-1].shape[-1]
     num_layers = len(layers)
     outputs = []
 
@@ -39,7 +39,6 @@ def mask_rcnn(X, training, network, gt_boxes=None, gt_classes=None, gt_masks=Non
         rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     else:
         rpn_feats, crop_feats, shrink_ratios = [feats[-1]], [feats[-1]], [shrink_ratios[-1]]
-    print(rpn_feats[0].shape, shrink_ratios[0])
 
     with tf.variable_scope('RPN') as scope:    
         anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
@@ -50,7 +49,7 @@ def mask_rcnn(X, training, network, gt_boxes=None, gt_classes=None, gt_masks=Non
         proposals, cls_gt_labels, cls_gt_terms, cls_gt_masks = classifier_targets(
                                                 rois['box'], gt_boxes, gt_classes, gt_masks)
     else:
-        proposals = refine_rois(rois)
+        proposals = refine_rois(rois, training)
 
     with tf.variable_scope('CLS'):
         if cfg.use_fpn:
@@ -71,5 +70,5 @@ def mask_rcnn(X, training, network, gt_boxes=None, gt_classes=None, gt_masks=Non
                          cls_gt_terms, cls_gt_masks, loss)
         loss['all'] = loss['rpn'] + loss['classifier']
         return loss, feat_extractor
-    return class_logits, class_probs, bbox_logits, mask_logits
+    return proposals, class_probs, bbox_logits, mask_logits
 

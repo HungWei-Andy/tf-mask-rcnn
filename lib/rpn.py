@@ -87,10 +87,10 @@ def decode_roi(anchors, loc, cls):
     box_w = (anc_widths+cfg.eps) * (tf.exp(loc[:,:,2])-cfg.log_eps)
     box_h = (anc_heights+cfg.eps) * (tf.exp(loc[:,:,3])-cfg.log_eps)
 
-    box_minx = tf.maximum(0.0, box_ctrx - 0.5 * box_w)
-    box_miny = tf.maximum(0.0, box_ctry - 0.5 * box_h)
-    box_maxx = tf.minimum(W-1, box_ctrx + 0.5 * box_w)
-    box_maxy = tf.minimum(H-1, box_ctry + 0.5 * box_h)
+    box_minx = box_ctrx - 0.5 * box_w
+    box_miny = box_ctry - 0.5 * box_h
+    box_maxx = box_ctrx + 0.5 * box_w
+    box_maxy = box_ctry + 0.5 * box_h
     boxes = tf.stack([box_minx, box_miny, box_maxx, box_maxy], axis=2)
 
     probs = tf.nn.softmax(cls)
@@ -99,25 +99,24 @@ def decode_roi(anchors, loc, cls):
     rois = {'anchor': anchors, 'box': boxes, 'prob': probs}
     return rois
 
-def refine_roi(boxes, probs, pre_nms_topn, post_nms_topn):
+def refine_roi(boxes, probs, pre_nms_topn):
     image_size = cfg.image_size
     min_size = cfg.min_size
 
     # filter with scores
-    _, order = tf.nn.top_k(probs, pre_nms_topn)
+    _, order = tf.nn.top_k(probs, tf.minimum(pre_nms_topn, tf.size(probs)))
     boxes = tf.gather(boxes, order)
     probs = tf.gather(probs, order)
 
     # filter too small boxes
-    normalized_box = boxes / image_size
-    widths = normalized_box[:,2] - normalized_box[:,0] 
-    heights = normalized_box[:,3] - normalized_box[:,1]
+    widths = boxes[:,2] - boxes[:,0] 
+    heights = boxes[:,3] - boxes[:,1]
     keep = tf.logical_and(widths >= min_size, heights >= min_size)
     boxes = tf.boolean_mask(boxes, keep)
     probs = tf.boolean_mask(probs, keep)
     return boxes, probs
 
-def refine_rois(rois):
+def refine_rois(rois, training):
     image_size = cfg.image_size
     min_size = cfg.min_size
     nms_thresh = cfg.rpn_nms_thresh
@@ -127,10 +126,8 @@ def refine_rois(rois):
     box_stddev = cfg.bbox_stddev.reshape(1, 1, 4)
 
     pre_nms_topn = 12000
-    post_nms_topn = 2000
     if not training:
         pre_nms_topn = 6000
-        post_nms_topn = 400
 
     boxes, probs = rois['box'], rois['prob']
     boxes = boxes * box_stddev + box_mean
@@ -140,10 +137,10 @@ def refine_rois(rois):
     for i in range(batch_size):
         box, prob = boxes[i], probs[i]
         box, prob = tf.reshape(box, [-1, 4]), tf.reshape(prob, [-1])
-        nonms_box, nonms_probs = refine_roi(box, prob, pre_nms_topn, post_nms_topn)
+        nonms_box, nonms_probs = refine_roi(box, prob, pre_nms_topn)
 
-        normalized_box = nonms_box / image_size
-        indices = tf.image.non_max_suppression(normalized_box, nonms_probs, proposal_count, nms_thresh)
+        indices = tf.image.non_max_suppression(nonms_box, nonms_probs, proposal_count, nms_thresh)
+
         proposals = tf.gather(nonms_box, indices)
         padding = proposal_count-tf.shape(proposals)[0]
         proposals = tf.reshape(tf.pad(proposals, [[0, padding], [0,0]]), [proposal_count, 4])
@@ -154,6 +151,7 @@ def refine_rois(rois):
 def crop_proposals(feats, crop_size, boxes, training):
     crop_channel = feats[0].shape[-1]
     image_size = cfg.image_size
+    proposal_count = cfg.rois_per_img if training else cfg.proposal_count_infer
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
     x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]
     w = x2 - x1
@@ -161,7 +159,7 @@ def crop_proposals(feats, crop_size, boxes, training):
 
     if not cfg.use_fpn:
         output = tf.image.crop_and_resize(feats[0], tf.reshape(boxes, (-1,4)), 
-                                          tf.range(cfg.batch_size*cfg.rois_per_img)//cfg.rois_per_img,
+                                          tf.range(cfg.batch_size*proposal_count)//proposal_count,
                                           [crop_size, crop_size])
     else:
         # adaptive features in fpn
@@ -180,6 +178,7 @@ def crop_proposals(feats, crop_size, boxes, training):
             original_ind.append(batch_ind)
        
             out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
+            out = tf.stop_gradient(out)
             outputs.append(out)
 
         # encapsulate

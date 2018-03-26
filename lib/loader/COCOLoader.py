@@ -4,7 +4,6 @@ import random
 
 import sys
 sys.path.append(join(dirname(__file__), 'cocoapi', 'PythonAPI'))
-sys.stdout = sys.stderr
 
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
@@ -46,4 +45,3 @@ class COCOLoader(Loader):
       rle = self.coco.annToRLE(ann)
       anns[i]['mask'] = maskUtils.decode(rle)
     return anns
-print('Good')

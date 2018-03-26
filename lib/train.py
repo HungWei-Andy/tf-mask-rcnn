@@ -3,7 +3,9 @@ from os.path import join, dirname, isdir
 import random
 import numpy as np
 import tensorflow as tf
+import sys
 
+sys.stdout = sys.stderr
 np.random.seed(0)
 random.seed(0)
 
@@ -12,6 +14,7 @@ from mask_rcnn import mask_rcnn
 from config import cfg
 
 def train(rpn_only=False):
+  print(cfg.__dict__)
   root = join(dirname(__file__), '..')
   if not isdir(join(root, cfg.output_dir)):
     os.makedirs(join(root, cfg.output_dir))
@@ -36,12 +39,21 @@ def train(rpn_only=False):
   learning_rate = tf.train.exponential_decay(cfg.lr, global_step, cfg.decay_step, cfg.decay_rate, staircase=True)
 
   # create optimization
-  optimizer = tf.train.MomentumOptimizer(learning_rate, cfg.momentum)
+  if cfg.optimizer == 'adam':
+    optimizer = tf.train.AdamOptimizer()
+  elif cfg.optimizer == 'momentum':
+    optimizer = tf.train.MomentumOptimizer(learning_rate, cfg.momentum)
+  else:
+    raise NotImplementedError
+
   gvs = optimizer.compute_gradients(loss['all'])
   newgvs = list()
   for ind, gv in enumerate(gvs):
     grad, var = gv
     if grad is None or cfg.conv1_label in var.name:
+      print('Ignore: ', grad, var)
+      continue
+    if cfg.cls_only and 'CLS' not in var.name:
       print('Ignore: ', grad, var)
       continue
     print(grad, var)
@@ -51,7 +63,8 @@ def train(rpn_only=False):
     #else:
     #  grad = grad + cfg.weight_decay * var
     newgvs.append((grad, var))
-  opt = optimizer.apply_gradients(gvs, global_step=global_step)
+  with tf.variable_scope('OPT') as scope:
+    opt = optimizer.apply_gradients(gvs, global_step=global_step)
 
   saver = tf.train.Saver(max_to_keep=100) 
   gpu_config = tf.ConfigProto()
@@ -69,11 +82,12 @@ def train(rpn_only=False):
 
     # restore
     start_iter = 0
-    last_train_file = tf.train.latest_checkpoint(join(dirname(__file__), '../output'))
+    last_train_file = tf.train.latest_checkpoint(join(root, cfg.output_dir))
     if last_train_file is not None:
         start_iter = int(last_train_file.split('-')[-1])
         print('restoring %s'%last_train_file)
         saver.restore(sess, last_train_file)
+        coco.index = cfg.batch_size * start_iter % len(coco)
 
     for i in range(start_iter, cfg.iterations):
       train_img, train_box, train_cls, train_mask = coco.batch()

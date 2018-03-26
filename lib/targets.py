@@ -146,7 +146,9 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
 
     fg_inds = np.where(max_iou>cfg.rois_fg_thresh)[0]
     bg_inds = np.where((max_iou>=cfg.rois_bg_thresh_low)&(max_iou<=cfg.rois_bg_thresh_high))[0]
-    
+    fg_inds_ori = fg_inds
+    bg_inds_ori = bg_inds
+
     if fg_inds.size > 0 and bg_inds.size > 0:
         num_fg = min(num_fg, fg_inds.size)
         fg_inds = np.random.choice(fg_inds, size=num_fg, replace=False)
@@ -175,7 +177,8 @@ def classifier_target_one_batch(rois, gt_boxes, gt_classes, gt_masks):
       intersection = np.hstack((np.maximum(box_pred[:,:2], box_gt[:,:2]),
                               np.minimum(box_pred[:,2:], box_gt[:,2:])))
     fg_gt_inds = fg_gt_inds.astype(np.int32)
-    return sampled_rois, labels, loc, intersection, fg_gt_inds
+    return (sampled_rois, labels, loc, intersection, fg_gt_inds, np.array(num_bg).astype(np.int32), 
+           bg_inds_ori.astype(np.int32), fg_inds_ori.astype(np.int32), iou.max())
 
 def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     '''
@@ -193,6 +196,7 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
     - mask: (N, proposal_batch_size, mask_size, mask_size, num_classes), gt masks 
     '''
     batch_size = cfg.batch_size
+    cand_rois = tf.maximum(0.0, tf.minimum(cfg.image_size-1., cand_rois))
     rois, cls, loc, mask = list(), list(), list(), list()
     for i in range(batch_size):
         gt = gt_boxes[i]
@@ -200,14 +204,15 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         gt_cls = gt_classes[i]
         gt_mask = gt_masks[i]
         
-        sampled_rois, sampled_cls, sampled_loc, inter, fg_gt_inds = tf.py_func(
+        sampled_rois, sampled_cls, sampled_loc, inter, fg_gt_inds, num_bg, bg_inds, fg_inds, iou = tf.py_func(
             classifier_target_one_batch, [roi, gt, gt_cls, gt_mask],
-            [tf.float32, tf.int32, tf.float32, tf.float32, tf.int32])
+            [tf.float32, tf.int32, tf.float32, tf.float32, tf.int32, tf.int32, tf.int32, tf.int32, tf.float32])
 
         ########################################## DEBUG ############################################
         # all_masks = tf.Print(all_masks, [tf.convert_to_tensor('second stage targets completed')]) #
+        fg_gt_inds = tf.Print(fg_gt_inds, [tf.shape(gt), tf.size(sampled_cls), tf.size(fg_gt_inds), num_bg, tf.size(bg_inds), tf.size(fg_inds), tf.shape(roi), iou])
         #############################################################################################
-
+        
         sampled_mask = tf.image.crop_and_resize(gt_mask, inter/cfg.image_size,
                                                 fg_gt_inds,
                                                 [cfg.mask_crop_size*2, cfg.mask_crop_size*2])
@@ -225,7 +230,10 @@ def classifier_targets(cand_rois, gt_boxes, gt_classes, gt_masks):
         cls.append(sampled_cls)
         loc.append(sampled_loc) 
         mask.append(sampled_mask)
-    rois, cls, loc, mask = tf.stack(rois,0), tf.stack(cls,0), tf.stack(loc,0), tf.stack(mask,0)
+    rois = tf.stack(rois, 0)
+    cls = tf.stack(cls, 0)
+    loc = tf.stack(loc, 0)
+    mask = tf.stack(mask, 0)
     rois = (rois - cfg.bbox_mean.reshape(1,1,4)) / cfg.bbox_stddev.reshape(1,1,4)
     rois, cls = tf.stop_gradient(rois), tf.stop_gradient(cls)
     loc, mask = tf.stop_gradient(loc), tf.stop_gradient(mask)

@@ -38,7 +38,9 @@ class mobilenet050(FeatExtractor):
         return output_layers, shrink_ratios
 
     def load(self, sess, path):
-        saver = tf.train.Saver()
+        restore_vars = [var for var in tf.global_variables()
+                        if 'MobilenetV1' in var.name and 'OPT' not in var.name]
+        saver = tf.train.Saver(restore_vars)
         saver.restore(sess, path)
 
 def feat_extractor_maker(label):
