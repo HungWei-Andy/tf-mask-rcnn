@@ -11,6 +11,7 @@ _config.weight_decay = 0.0001
 _config.decay_step = 60000
 _config.decay_rate = 0.1
 _config.output_dir = 'model/output/mobilenet050'
+_config.model_name = 'model.ckpt'
 _config.eval_iou_thresh = 0.5
 
 _config.cls_only = False
@@ -33,9 +34,9 @@ else:
   _config.rois_per_img = 64
   _config.mask_crop_size = 7
 
-_config.rpn_only = False#True
+_config.rpn_only = True
 if _config.rpn_only:
-  _config.batch_size = 16
+  _config.batch_size = 24
 else:
   _config.batch_size = 2
 

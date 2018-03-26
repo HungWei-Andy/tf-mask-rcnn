@@ -115,11 +115,7 @@ def train(rpn_only=False):
       #train_writer.add_summary(summary, i)
       
       if (i+1) % cfg.save_every == 0:
-        if rpn_only:
-          model_name = 'rpn'
-        else:
-          model_name = 'model'
-        saver.save(sess, join(root, cfg.output_dir, model_name), global_step=(i+1))
+        saver.save(sess, join(root, cfg.output_dir, cfg.model_name), global_step=(i+1))
 
 if __name__ == '__main__':
   train(rpn_only=cfg.rpn_only) #debug/train
