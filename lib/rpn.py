@@ -152,7 +152,7 @@ def refine_rois(rois):
     return final_proposal
 
 def crop_proposals(feats, crop_size, boxes, training):
-    crop_channel = cfg.crop_channel
+    crop_channel = feats[0].shape[-1]
     image_size = cfg.image_size
     x1, y1, x2, y2 = tf.split(boxes, 4, axis=2)
     x1, y1, x2, y2 = x1[:,:,0], y1[:,:,0], x2[:,:,0], y2[:,:,0]

@@ -1,5 +1,5 @@
 import os
-from os.path import join, dirname
+from os.path import join, dirname, isdir
 import random
 import numpy as np
 import tensorflow as tf
@@ -12,6 +12,10 @@ from mask_rcnn import mask_rcnn
 from config import cfg
 
 def train(rpn_only=False):
+  root = join(dirname(__file__), '..')
+  if not isdir(join(root, cfg.output_dir)):
+    os.makedirs(join(root, cfg.output_dir))
+
   coco = COCOLoader(is_train=True, shuffle=True)
   
   # build mask rcnn network
@@ -37,7 +41,7 @@ def train(rpn_only=False):
   newgvs = list()
   for ind, gv in enumerate(gvs):
     grad, var = gv
-    if grad is None or 'conv1' in var.name:
+    if grad is None or cfg.conv1_label in var.name:
       print('Ignore: ', grad, var)
       continue
     print(grad, var)
@@ -61,7 +65,7 @@ def train(rpn_only=False):
   
     # running training 
     sess.run(tf.global_variables_initializer())
-    net.load(sess, join(dirname(__file__), '../model/pretrained_model/ori_resnet/resnet50.npy'))
+    net.load(sess, join(root, cfg.pretrained_model))
 
     # restore
     start_iter = 0
@@ -101,7 +105,7 @@ def train(rpn_only=False):
           model_name = 'rpn'
         else:
           model_name = 'model'
-        saver.save(sess, join(dirname(__file__), '..', 'output', model_name), global_step=(i+1))
+        saver.save(sess, join(root, cfg.output_dir, model_name), global_step=(i+1))
 
 if __name__ == '__main__':
   train(rpn_only=cfg.rpn_only) #debug/train

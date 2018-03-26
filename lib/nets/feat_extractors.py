@@ -25,7 +25,7 @@ class resnet50(FeatExtractor):
     def load(self, sess, path):
         self.net.load(sess, path)
 
-class mobilenet50(FeatExtractor):
+class mobilenet050(FeatExtractor):
     def __call__(self, X, training):
         net, all_feats = mobilenet_v1_050(X, is_training=training, num_classes=None)
         conv1 = all_feats['Conv2d_1_pointwise']

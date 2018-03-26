@@ -39,6 +39,7 @@ def mask_rcnn(X, training, network, gt_boxes=None, gt_classes=None, gt_masks=Non
         rpn_feats, crop_feats, shrink_ratios = fpn(feats, shrink_ratios)
     else:
         rpn_feats, crop_feats, shrink_ratios = [feats[-1]], [feats[-1]], [shrink_ratios[-1]]
+    print(rpn_feats[0].shape, shrink_ratios[0])
 
     with tf.variable_scope('RPN') as scope:    
         anchors, rpn_loc, rpn_cls = rpn_logits(rpn_feats, shrink_ratios)
