@@ -1,5 +1,5 @@
 # Tensorflow Mask-RCNN
-This is an tensorflow implemetation of [Kaming He, et al. Mask R-CNN](https://arxiv.org/pdf/1703.06870.pdf). The paper reports two backbone network features: [ResNet50](https://arxiv.org/pdf/1512.03385.pdf) + FPN and ResNet50 + C4 features. This implementation utilizes [Mobilenet v1](https://arxiv.org/pdf/1704.04861.pdf) with 0.5 width multiplier + FPN and ResNet50 + C5 as backbone. The implementations is trined and tested using COCO 2014 train and validation dataset. 
+This is an tensorflow implemetation of [Kaming He, et al. Mask R-CNN](https://arxiv.org/pdf/1703.06870.pdf). The paper reports two backbone network features: [ResNet50](https://arxiv.org/pdf/1512.03385.pdf) + [FPN](https://arxiv.org/pdf/1612.03144.pdf) and ResNet50 + C4 features. This implementation utilizes [Mobilenet v1](https://arxiv.org/pdf/1704.04861.pdf) with 0.5 width multiplier + FPN and ResNet50 + C5 as backbone. The implementations is trined and tested using COCO 2014 train and validation dataset. 
 
 ## Download Code
 Since the code contains a cocoapi submodule, be noticed to specify --recursive for git clone to download.
