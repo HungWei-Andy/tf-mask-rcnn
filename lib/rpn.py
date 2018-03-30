@@ -22,7 +22,7 @@ def create_anchors(feats, stride, scales, aspect_ratios=[0.5, 1, 2], base_size=1
     
     base_anchors = np.hstack((ctr-0.5*scale_wh, ctr+0.5*scale_wh))
     
-    anchors = np.zeros((feat_size, feat_size, num_ratios*num_scales, 4), dtype=np.float32)
+    anchors = np.zeros((int(feat_size), int(feat_size), num_ratios*num_scales, 4), np.float32)
     anchors += base_anchors.reshape(1,1,-1,4)
     anchors[:,:,:,[0,2]] += np.arange(feat_size).reshape(-1,1,1,1) * stride
     anchors[:,:,:,[1,3]] += np.arange(feat_size).reshape(-1,1,1,1) * stride
@@ -178,7 +178,7 @@ def crop_proposals(feats, crop_size, boxes, training):
             original_ind.append(batch_ind)
        
             out = tf.image.crop_and_resize(feats[i], cur_boxes/cfg.image_size, batch_ind, [crop_size, crop_size])
-            out = tf.stop_gradient(out)
+            #out = tf.stop_gradient(out)
             outputs.append(out)
 
         # encapsulate

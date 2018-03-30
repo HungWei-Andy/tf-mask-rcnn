@@ -85,7 +85,9 @@ def train(rpn_only=False):
     last_train_file = tf.train.latest_checkpoint(join(root, cfg.output_dir))
     if last_train_file is not None:
         start_iter = int(last_train_file.split('-')[-1])
-        print('restoring %s'%last_train_file)
+        #print('restoring %s'%last_train_file)
+        #restore_saver = tf.train.Saver([v for v in tf.global_variables() if 'CLS' not in v.name])
+        #restore_saver.restore(sess, last_train_file)
         saver.restore(sess, last_train_file)
         coco.index = cfg.batch_size * start_iter % len(coco)
 
@@ -103,19 +105,24 @@ def train(rpn_only=False):
           feed_dict[mask_tensor] = train_mask[ind]
 
       if (i+1) % cfg.print_every == 0:
-        #lr, summary, loss_val, _ = sess.run([learning_rate, merged_summary, loss, opt], feed_dict = feed_dict)
         lr, loss_val, _ = sess.run([learning_rate, loss, opt], feed_dict=feed_dict)
         print('===== Iterations: %d ====='%(i+1))
         for key in sorted(loss.keys()):
           print('%s loss: %.5f'%(key, loss_val[key]))
         print('lr: %.8f'%lr)
+
       else:
         _ = sess.run(opt, feed_dict=feed_dict)
-        #summary, _ = sess.run([merged_summary, opt], feed_dict = feed_dict)
-      #train_writer.add_summary(summary, i)
-      
+
       if (i+1) % cfg.save_every == 0:
         saver.save(sess, join(root, cfg.output_dir, cfg.model_name), global_step=(i+1))
+ 
+      sys.stdout.flush()
+      feed_dict = None
+      train_im = None
+      train_box = None
+      train_cls = None
+      train_mask = None
 
 if __name__ == '__main__':
   train(rpn_only=cfg.rpn_only) #debug/train

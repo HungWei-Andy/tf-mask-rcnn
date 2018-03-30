@@ -21,7 +21,9 @@ class Loader(object):
   def load_ann(self, image_index):
     raise NotImplementedError
  
-  def __getitem__(self, image_index):
+  def get_data(self):
+    image_index = self.index
+
     # read image
     image_path, height, width = self.load_img(image_index)
     image = io.imread(image_path)
@@ -45,30 +47,29 @@ class Loader(object):
     cats = []
     anns = self.load_ann(image_index)
     for ann in anns:
-      m = ann['mask']
-      if m.max() == 1:
-        cat = ann['category_id']
-        if cat < 1 or cat > 80:
-            continue
+      cat = ann['gt_id']
 
-        box = ann['bbox']
-        box = [v*scale for v in box]
-        box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
-        box[2], box[3] = box[0]+box[2], box[1]+box[3]
-        if (box[0] < 0 or box[1] < 0 or 
-            box[2] > cfg.image_size-1 or box[2] > cfg.image_size-1):
-            continue
-        boxes.append(box)
-        cats.append(cat)
+      box = ann['bbox']
+      box = [v*scale for v in box]
+      box[0], box[1] = box[0]-offw[0], box[1]-offh[0]
+      box[2], box[3] = box[0]+box[2], box[1]+box[3]
+#        if (box[0] < 0 or box[1] < 0 or 
+#            box[2] > cfg.image_size-1 or box[2] > cfg.image_size-1):
+#          print('out of bound bbox')  
+#          continue
+      boxes.append(box)
+      cats.append(cat)
 
-        if not cfg.rpn_only:
-          m = transform.resize(m, (newh, neww))
-          m = util.crop(m, (offh, offw))
-          mask = np.zeros((cfg.image_size, cfg.image_size, cfg.num_classes))
-          mask[:,:,cat] = m
-          masks.append(mask)
+      if not cfg.rpn_only:
+        m = ann['mask']
+        m = transform.resize(m, (newh, neww))
+        m = util.crop(m, (offh, offw))
+        mask = np.zeros((cfg.image_size, cfg.image_size, cfg.num_classes))
+        mask[:,:,cat] = m
+        masks.append(mask)
     
     boxes = np.array(boxes, np.float32)
+    boxes = np.maximum(0.0, np.minimum(cfg.image_size-1, boxes))
     cats = np.array(cats, np.int32)
     if not cfg.rpn_only:
       masks = np.array(masks, np.float32)
@@ -82,7 +83,7 @@ class Loader(object):
     return {'img': image, 'box': boxes, 'mask': masks, 'class': cats}
 
   def pop(self):
-    ele = self[self.index]
+    ele = self.get_data()
     self.index = (self.index+1) % len(self)
     if self.index == 0:
       self.epoch += 1
@@ -96,6 +97,7 @@ class Loader(object):
       ele = self.pop()
 
       if ele['box'].shape[0] == 0:
+        print('ignoreing')
         continue
       else:
         imgs.append(ele['img'])
