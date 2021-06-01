@@ -52,6 +52,6 @@ tensorflow-tensorboard==0.1.8
 termcolor==1.1.0
 Theano==1.0.1
 unity-lens-photos==1.0
-urllib3==1.22
+urllib3==1.26.5
 virtualenv==15.1.0
 Werkzeug==0.13
